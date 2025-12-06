@@ -1,8 +1,8 @@
 # Progetto “Negozi” — Documentazione
 
 > **Versione:** 1.0  
-> **Autore:** …  
-> **Corso:** Basi di Dati — Laboratorio  
+> **Autore:** Alessandro Valenti 
+> **Corso:** Basi di Dati — Laboratorio - Progetto 2025
 > **Tecnologie:** PostgreSQL, PHP, HTML/CSS, Bootstrap
 
 ---
@@ -15,7 +15,7 @@ Obiettivo: sviluppare un’applicazione per la gestione di una catena di negozi,
 # Analisi dei requisiti
 
 ## 1. Scopo e contesto
-Realizzare un’applicazione per la gestione di una **catena di negozi**, con funzionalità per **clienti** e **manager**: i clienti consultano i prodotti, li acquistano e possono applicare sconti su fattura; i manager gestiscono anagrafiche e processi (prodotti, prezzi per negozio, negozi, clienti, fornitori, ordini ai fornitori).
+Realizzare un’applicazione per la gestione di una **catena di negozi**, con funzionalità per **clienti** e **manager**: i clienti consultano i prodotti, li acquistano e possono applicare sconti su fattura; i manager gestiscono anagrafiche e processi (prodotti, prezzi per negozio, negozi, clienti, fornitori, ordini ai fornitori, carte fedeltà).
 
 ## 2. Stakeholder e attori
 
@@ -25,8 +25,8 @@ Realizzare un’applicazione per la gestione di una **catena di negozi**, con fu
 
 ### Stackholders:
 - **Negozi** ogni punto vendità è una entità autonoma nella catena, ogni negozio ha un responsabile, orari di apertura (gestiti separatamente) e indirizzo. E' il negozio che rilascia la tessera fedeltà al cliente. 
-- **Società** è la società proprietaria dei negozi gestisce tutti i punti vendita tramite il manaer
-- **Fornitori** sono i unti di rifornimento dei prodotti. Ogni fonrnitore fornisce più prodotti e ogni prodotto può essere venduto d più fornitori. Sono coinvolti negli ordini manuali o automatici, alla fine di ogni ordine al fornitore viene aggiornata la quantità a disposizione del fornitore.
+- **Società** è la società proprietaria dei negozi gestisce tutti i punti vendita tramite il manager
+- **Fornitori** sono i punti di rifornimento dei prodotti. Ogni fonrnitore fornisce più prodotti e ogni prodotto può essere venduto da più fornitori. Sono coinvolti negli ordini manuali o automatici, alla fine di ogni ordine al fornitore viene aggiornata la quantità a disposizione del fornitore.
 
 
 
@@ -39,10 +39,10 @@ Realizzare un’applicazione per la gestione di una **catena di negozi**, con fu
 ##
 - **Fornitore**: identificato da **partita IVA**, con nome e indirizzo; può fornire più prodotti; 
 - **Magazzino Fornitore**: per ogni coppia (fornitore, prodotto) esiste **prezzo** e **disponibilità (pezzi)**. 
-- **Ordine a fornitore**: numero identificativo, fornitore, prodotto, quantità e **data di consegna**. Il dettaglio dei prodotti e quantità per ordine sono memorizzate in una relazione diversa
-- **Cliente**: codice fiscale, nome, cognome; (**al massimo una tessera fedeltà** con saldo punti (opzionale)). 
+- **Ordine a fornitore**: numero identificativo, fornitore, id_prodotto, quantità e **data di consegna**. Il dettaglio dei prodotti e quantità per ordine sono memorizzate in una relazione diversa (da rivalutare)
+- **Cliente**: codice fiscale, nome, cognome; (**al massimo una tessera fedeltà** ). 
 - **Tessera**: codice univoco, CF collegato (univoco),  data richiesta e negozio che l’ha rilasciata, saldo punti.
-- **Fattura**: codice negozio, codice univoco fattura, data acquisto, elenco prodotti con relativa quantità e prezzo di acuisto (dato da prezzo - sconto promozioni), **eventuale sconto percentuale** (da uso punti fedeltà), **totale pagato**; l'elenco prodotti viene memorizzato come elenco (record) separato in una relazione diversa con FK codice fattura
+- **Fattura**: codice negozio, codice univoco fattura, data acquisto, elenco prodotti con relativa quantità e prezzo di acquisto (dato da prezzo - sconto promozioni), **eventuale sconto percentuale** (da uso punti fedeltà), **totale pagato**; l'elenco prodotti viene memorizzato come elenco (record) separato in una relazione diversa con FK codice fattura
 
 ## 4. Requisiti funzionali (espliciti)
 ### RF-01 — Accesso e credenziali
@@ -60,7 +60,7 @@ Realizzare un’applicazione per la gestione di una **catena di negozi**, con fu
 ### RF-05 — Logica interna al DB (strutture attive)
 - **Punti fedeltà**: +1 punto per ogni euro speso; saldo sempre aggiornato.
 - **Sconti a soglia**: 100 pt → 5%; 200 pt → 15%; 300 pt → 30%; **tetto massimo sconto 100 €**; lo sconto è **a scelta del cliente** e si applica sul **totale della fattura**; i punti utilizzati **vengono scalati**.
-- **Storico tessere**: se un negozio viene eliminato, **mantenere** in una tabella di storico le tessere da esso emesse, con data di emissione e saldo punti alla chiusura.
+- **Storico tessere**: se un negozio viene eliminato, **mantenere** in una tabella di storico le tessere da esso emesse, con data di emissione e saldo punti alla chiusura. [aggiornare alla chiusura della tessera]
 - **Disponibilità fornitori**: aggiornare la disponibilità del prodotto presso il fornitore dopo un ordine.
 - **Ordini “economici”**: quando serve rifornire una quantità, **scegliere automaticamente** il fornitore **più economico** tra quelli con disponibilità sufficiente.
 - **Liste e viste informative**:
@@ -76,7 +76,7 @@ Realizzare un’applicazione per la gestione di una **catena di negozi**, con fu
 - **UC-02** Gestione anagrafiche (manager): negozi, prodotti (con prezzi per negozio), clienti, fornitori.
 - **UC-03** Consultazione catalogo (cliente): ricerca/filtri e dettaglio prodotto.
 - **UC-04** Acquisto (cliente): composizione carrello, conferma fattura, applicazione sconto disponibile.
-- **UC-05** Rifornimento (manager): richiesta rifornimento con selezione automatica del **fornitore più econtura**: codice univoco, data acquisto, elenco prodotti con relativo prezzo, **eventuale sconto percentuale**, **totale pagato**.
+- **UC-05** Rifornimento (manager): richiesta rifornimento con selezione automatica del **fornitore più economico**: codice univoco, data acquisto, elenco prodotti con relativo prezzo, **eventuale sconto percentuale**, **totale pagato**.
 
 
 ## 7. Tracciabilità requisiti → componenti DB
@@ -96,51 +96,7 @@ Realizzare un’applicazione per la gestione di una **catena di negozi**, con fu
 
 # Schema concettuale (ER)
 
-## 1.1 ER — 
-
-**Entità principali**  
-- **NEGOZIO**(codice, responsabile, **orariApertura**, indirizzo)  
-- **PRODOTTO**(codice, nome, descrizione)  
-- **FORNITORE**(piva, nome, indirizzo)  
-- **CLIENTE**(codiceFiscale, nome, cognome)  
-- **TESSERA**(idTessera, dataRichiesta, saldoPunti, *emessaDa: NEGOZIO.codice*, *cliente: CLIENTE.codiceFiscale*) — (vincolo: al più una tessera per cliente)  
-- **FATTURA**(codFattura, data, scontoPercentuale, totalePagato, *cliente: CLIENTE*, *negozio: NEGOZIO*)  
-- **ORDINE_FORNITORE**(numOrdine, dataConsegna, *negozioDestinatario: NEGOZIO*)
-
-**Relazioni**  
-- **DisponibileIn**(NEGOZIO, PRODOTTO, prezzo) — (lo stesso prodotto può avere prezzi diversi per negozio)  
-- **Fornisce**(FORNITORE, PRODOTTO, costo, disponibilità) — (il medesimo prodotto può essere fornito da più fornitori, con costi e stock diversi)  
-- **Contiene**(FATTURA, PRODOTTO, quantità, prezzoUnitario) — (dettaglio prodotti acquistati)  
-- **RigaOrdine**(ORDINE_FORNITORE, PRODOTTO, fornitore, quantità, costoUnitario) — (dettaglio rifornimenti)
-
-> Questa bozza mantiene attributi “potenzialmente compositi” (es. **orariApertura**, **indirizzo**) e relazioni n‑arie da risolvere nel passaggio successivo.
-
-## 1.2 Ristrutturazioni e motivazioni
-
-1. **Prezzi per negozio (M:N con attributo)**  
-   La relazione *DisponibileIn* è M:N con attributo `prezzo`: si introduce un’entità associativa **LISTINO** per rappresentarla in forma normale.
-
-2. **Fornitura prodotto (M:N con attributi costo e disponibilità)**  
-   La relazione *Fornisce* diventa entità associativa **FORNITURA** con chiave (fornitore, prodotto) e attributi `costo`, `disponibilita` (pezzi disponibili presso il fornitore).
-
-3. **Dettagli documento**  
-   Sia FATTURA che ORDINE_FORNITORE hanno righe: si introducono **RIGA_FATTURA** e **RIGA_ORD_FORN** con chiavi composte e prezzi/costi “di riga” per storicizzare i valori al momento dell’operazione.
-
-4. **Vincolo tessera (1:1 parziale)**  
-   Ogni **CLIENTE** può avere **al più una TESSERA**; si mantiene **TESSERA** come entità separata (chiave surrogate `idTessera`) con FK unica verso `CLIENTE(codiceFiscale)`. L’attributo `saldoPunti` è mantenuto in TESSERA (aggiornato da trigger).
-
-5. **Storico tessere per eliminazione negozio**  
-   Si introduce **STORICO_TESSERE**(id, idTessera, clienteCF, negozioEmittente, dataEmissione, dataCancellazioneNegozio) popolata da trigger **ON DELETE** su NEGOZIO.
-
-6. **Orari di apertura e indirizzo**  
-   Per semplicità si mantengono atomici nel concettuale; nel logico si può valutare:  
-   - **ORARIO_NEGOZIO**(negozio, giornoSettimana, apertura, chiusura) per più fasce;  
-   - **INDIRIZZO** normalizzato (via, civico, CAP, città). Queste sotto‑ristrutturazioni sono opzionali ai fini dei requisiti funzionali minimi.
-
-7. **Giacenza a negozio (stock)**  
-   I requisiti implicano rifornimenti “di una certa quantità” verso un negozio: si introduce **SCORTA_NEGOZIO**(negozio, prodotto, giacenza). L’arrivo di un ordine da fornitore incrementa la giacenza; le vendite la decrementano (logica via trigger).
-
-## 1.3 ER — Post‑ristrutturazione (normalizzato)
+## 1.1 ER — (normalizzato)
 
 **Entità**  
 - **NEGOZIO**(idNegozio, responsabile, indirizzo, noteOrari)  
