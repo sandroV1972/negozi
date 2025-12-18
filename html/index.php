@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema Negozi</title>
+    <title>Login - Retro Gaming Store</title>
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -20,15 +21,9 @@
             justify-content: center;
         }
         .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
+            background: rgba(255, 255, 255, 1);
+            border-radius:20px;
             box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-        }
-        .brand-logo {
-            font-size: 3rem;
-            color: #667eea;
         }
     </style>
 </head>
@@ -77,9 +72,7 @@
                         <div class="card-body p-5">
                             <!-- Logo e Titolo -->
                             <div class="text-center mb-4">
-                                <i class="bi bi-shop brand-logo"></i>
-                                <h2 class="mt-3 mb-2">Sistema Negozi</h2>
-                                <p class="text-muted">Accedi al tuo account</p>
+                                <img src="images/logo.jpg" alt="Logo" class="mb-3" style="width: 80px;">
                             </div>
 
                             <!-- Form di Login -->
@@ -105,38 +98,12 @@
                                     </div>
                                 </div>
 
-                                <div class="mb-4 form-check">
-                                    <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                                    <label class="form-check-label" for="remember">
-                                        Ricordami
-                                    </label>
-                                </div>
-
                                 <div class="d-grid mb-4">
                                     <button type="submit" class="btn btn-primary btn-lg">
                                         <i class="bi bi-box-arrow-in-right"></i> Accedi
                                     </button>
                                 </div>
                             </form>
-
-                            <!-- Link aggiuntivi -->
-                            <div class="text-center">
-                                <div class="mb-2">
-                                    <a href="pages/forgot_password.php" class="text-decoration-none">
-                                        <i class="bi bi-key"></i> Password dimenticata?
-                                    </a>
-                                </div>
-                                <div class="mb-3">
-                                    <a href="pages/register.php" class="text-decoration-none">
-                                        <i class="bi bi-person-plus"></i> Registrati come cliente
-                                    </a>
-                                </div>
-                                <hr class="my-3">
-                                <div>
-                                    <a href="pages/test_db.php" class="text-decoration-none text-muted">
-                                        <i class="bi bi-database-check"></i> Test Database
-                                    </a>
-                                </div>
                             </div>
                         </div>
                     </div>

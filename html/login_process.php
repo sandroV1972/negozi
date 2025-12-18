@@ -1,24 +1,14 @@
 <?php
-// Debug avanzato
-ini_set('display_errors', 1);
-ini_set('log_errors', 1);
-error_reporting(E_ALL);
-
-echo "<h3>DEBUG LOGIN PROCESS</h3>";
-echo "Metodo: " . $_SERVER['REQUEST_METHOD'] . "<br>";
 
 // Verifica che il file database.php esista
 if (!file_exists('config/database.php')) {
     die("ERRORE: File config/database.php non trovato!");
 }
-echo "✅ File database.php trovato<br>";
 
 session_start();
-echo "✅ Sessione avviata<br>";
 
 try {
     require_once 'config/database.php';
-    echo "✅ Database.php caricato<br>";
 } catch (Exception $e) {
     die("ERRORE nel caricamento database.php: " . $e->getMessage());
 }
@@ -29,15 +19,9 @@ function verifyPassword($password, $hash) {
 }
 
 // Verifica variabili POST
-echo "<h4>Dati ricevuti:</h4>";
-echo "POST data: <pre>" . print_r($_POST, true) . "</pre>";
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
-    
-    echo "Email pulita: '" . htmlspecialchars($email) . "'<br>";
-    echo "Password ricevuta: " . (empty($password) ? "VUOTA" : strlen($password) . " caratteri") . "<br>";
     
     if (empty($email) || empty($password)) {
         header('Location: index.php?error=empty_fields');
@@ -45,22 +29,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     try {
-        echo "Tentativo connessione database...<br>";
         $db = Database::getInstance();
-        echo "✅ Database connesso<br>";
-        
+   
         echo "Tentativo query utente...<br>";
-        // CORRETTO: usa i nomi colonne corretti del tuo database
-        $sql = "SELECT id_utente as id, email, username, password_hash as password, attivo FROM auth.utenti WHERE email = ? AND attivo = TRUE";
+        // Query con JOIN per ottenere anche il ruolo
+        $sql = "SELECT u.id_utente as id, u.email, u.username, u.password, u.attivo, r.nome as ruolo
+                FROM auth.utenti u
+                LEFT JOIN auth.utente_ruolo ur ON u.id_utente = ur.id_utente
+                LEFT JOIN auth.ruolo r ON ur.id_ruolo = r.id_ruolo
+                WHERE u.email = ? AND u.attivo = TRUE";
         echo "SQL: " . $sql . "<br>";
         echo "Parametri: [" . $email . "]<br>";
-        
+
         $stmt = $db->query($sql, [$email]);
-        echo "✅ Query eseguita<br>";
-        
+ 
         $user = $stmt->fetch();
-        echo "Risultato query: " . ($user ? "UTENTE TROVATO" : "NESSUN UTENTE") . "<br>";
-        
+    
         if ($user) {
             echo "<h4>Dati utente (mappati):</h4>";
             echo "<pre>" . print_r($user, true) . "</pre>";
@@ -76,23 +60,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($password_check) {
                 echo "<h4>LOGIN RIUSCITO!</h4>";
                 echo "Imposto sessione...<br>";
-                
+
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_email'] = $user['email'];
-                $_SESSION['user_nome'] = $user['username']; // Usa username come nome
-                $_SESSION['user_cognome'] = ''; // Non hai cognome nel DB
-                $_SESSION['user_tipo'] = 'manager'; // Assumiamo manager per ora
+                $_SESSION['user_nome'] = $user['username'];
+                $_SESSION['user_cognome'] = '';
+                $_SESSION['user_tipo'] = $user['ruolo'] ?? 'cliente'; // Usa ruolo dal DB
                 $_SESSION['logged_in'] = true;
-                
+
                 echo "Sessione impostata: <pre>" . print_r($_SESSION, true) . "</pre>";
-                
-                echo "👔 Redirect a dashboard manager...<br>";
-                echo '<a href="pages/dashboard_manager.php">Clicca qui per andare alla dashboard</a><br>';
-                echo '<meta http-equiv="refresh" content="3;url=pages/dashboard_manager.php">';
-                
+
+                // Redirect in base al ruolo
+                $redirect_url = ($user['ruolo'] === 'manager') ? 'pages/dashboard_manager.php' : 'pages/dashboard_cliente.php';
+
+
                 // Aggiorna ultimo accesso
                 $db->query("UPDATE auth.utenti SET ultimo_accesso = NOW() WHERE id_utente = ?", [$user['id']]);
-                
+
                 exit;
             } else {
                 header('Location: index.php?error=invalid_password');
@@ -113,5 +97,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-echo "<hr><h4>Debug completato</h4>";
 ?>

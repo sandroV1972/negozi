@@ -1,0 +1,1071 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CAUTION: Do not modify this file unless you know what you are doing.
+ Unexpected results may occur if the code is changed deliberately.
+-->
+<dbmodel pgmodeler-ver="1.1.3" use-changelog="false" max-obj-count="24"
+	 last-position="-6,-32" last-zoom="0.75" scene-rect="-8,-43.1363,2780.54,1231.63"
+	 default-schema="public" default-owner="postgres"
+	 layers="Default layer"
+	 active-layers="0"
+	 layer-name-colors="#000000"
+	 layer-rect-colors="#b4b4b4"
+	 show-layer-names="false" show-layer-rects="false">
+<database name="negozi_db" is-template="false" allow-conns="true">
+</database>
+
+<schema name="public" layers="0" fill-color="#e1e1e1" name-color="#000000" sql-disabled="true">
+</schema>
+
+<schema name="negozi" layers="0" alias="Gestionale Catena Negozi" rect-visible="true" fill-color="#e1e1e1" name-color="#31363b">
+	<role name="postgres"/>
+</schema>
+
+<schema name="auth" layers="0" alias="Autorizzazioni" rect-visible="true" fill-color="#e1e1e1" name-color="#31363b">
+	<role name="postgres"/>
+</schema>
+
+<table name="utenti" layers="0" collapse-mode="1" max-obj-count="8" z-value="0">
+	<schema name="auth"/>
+	<role name="postgres"/>
+	<position x="60.8485" y="87.5151"/>
+	<column name="id_utente" not-null="true">
+		<type name="serial" length="0"/>
+	</column>
+	<column name="email" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<column name="username" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<column name="password" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<column name="attivo" not-null="true" default-value="FALSE">
+		<type name="boolean" length="0"/>
+	</column>
+	<column name="creato" not-null="true" default-value="now()">
+		<type name="timestamp" length="0"/>
+	</column>
+	<column name="ultimo_accesso">
+		<type name="timestamp" length="0"/>
+	</column>
+	<constraint name="id_utente_pk" type="pk-constr" table="auth.utenti">
+		<columns names="id_utente" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="unique_email" type="uq-constr" table="auth.utenti">
+		<columns names="email" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="unique_username" type="uq-constr" table="auth.utenti">
+		<columns names="username" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="ruolo" layers="0" collapse-mode="1" max-obj-count="3" z-value="0">
+	<schema name="auth"/>
+	<role name="postgres"/>
+	<position x="508.334" y="112"/>
+	<column name="id_ruolo" not-null="true">
+		<type name="serial" length="0"/>
+	</column>
+	<column name="nome" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<column name="descrizione">
+		<type name="text" length="0"/>
+	</column>
+	<constraint name="nome_univoco" type="uq-constr" table="auth.ruolo">
+		<columns names="nome" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="ruolo_pk" type="pk-constr" table="auth.ruolo">
+		<columns names="id_ruolo" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="utente_ruolo" layers="0" collapse-mode="1" max-obj-count="3" z-value="0">
+	<schema name="auth"/>
+	<role name="postgres"/>
+	<position x="312.576" y="116.363"/>
+	<column name="id_utente" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="id_ruolo" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<constraint name="utente_ruolo_pk" type="pk-constr" table="auth.utente_ruolo">
+		<columns names="id_utente,id_ruolo" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="sessions" layers="0" collapse-mode="2" max-obj-count="4" z-value="0">
+	<schema name="auth"/>
+	<role name="postgres"/>
+	<position x="309.091" y="534.181"/>
+	<column name="id_sessione" not-null="true">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="utente">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="creato" not-null="true" default-value="now()">
+		<type name="timestamp" length="0"/>
+	</column>
+	<column name="scade" not-null="true" default-value="now() + interval '7 days'">
+		<type name="timestamp" length="0"/>
+	</column>
+	<constraint name="sessions_pk" type="pk-constr" table="auth.sessions">
+		<columns names="id_sessione" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="reset_token" layers="0" collapse-mode="2" max-obj-count="7" z-value="0">
+	<schema name="auth"/>
+	<role name="postgres"/>
+	<position x="89.9397" y="567.515"/>
+	<column name="id_token" not-null="true">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="utente">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="token_hash" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<column name="creato" not-null="true" default-value="now()">
+		<type name="timestamp" length="0"/>
+	</column>
+	<column name="scade" not-null="true">
+		<type name="timestamp" length="0"/>
+	</column>
+	<column name="usato">
+		<type name="timestamp" length="0"/>
+	</column>
+	<constraint name="reset_token_pk" type="pk-constr" table="auth.reset_token">
+		<columns names="id_token" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<function name="email_lowercase"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL UNSAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="auth"/>
+	<role name="postgres"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="trigger" length="0"/>
+	</return-type>
+	<definition> <![CDATA[IF NEW.email IS NOT NULL THEN NEW.email := lower(NEW.email); END IF;]]> </definition>
+</function>
+
+<trigger name="email_to_lower" firing-type="BEFORE" per-line="false" constraint="false"
+	 ins-event="true" del-event="false" upd-event="true" trunc-event="false"
+	 table="auth.utenti">
+		<function signature="auth.email_lowercase()"/>
+</trigger>
+
+<table name="clienti" layers="0" collapse-mode="2" max-obj-count="6" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="942.011" y="48.5607"/>
+	<column name="id_cliente" not-null="true">
+		<type name="serial" length="0"/>
+	</column>
+	<column name="cf" not-null="true">
+		<type name="char" length="16"/>
+	</column>
+	<column name="nome" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<column name="cognome" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<column name="utente" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<constraint name="clienti_pk" type="pk-constr" table="negozi.clienti">
+		<columns names="id_cliente" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="cf_unique" type="uq-constr" table="negozi.clienti">
+		<columns names="cf" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="negozio" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="1570.14" y="13.5304"/>
+	<column name="id_negozio" not-null="true">
+		<type name="serial" length="0"/>
+	</column>
+	<column name="responsabile" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="indirizzo" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<constraint name="negozio_pk" type="pk-constr" table="negozi.negozio">
+		<columns names="id_negozio" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="tessere" layers="0" collapse-mode="2" max-obj-count="6" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="735.59" y="561.894"/>
+	<column name="id_tessera" not-null="true">
+		<type name="serial" length="0"/>
+	</column>
+	<column name="negozio_emittente" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="data_richiesta" not-null="true" default-value="now()">
+		<type name="date" length="0"/>
+	</column>
+	<column name="saldo_punti" not-null="true" default-value="0">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="archiviata" not-null="true" default-value="FALSE">
+		<type name="boolean" length="0"/>
+	</column>
+	<constraint name="tessere_pk" type="pk-constr" table="negozi.tessere">
+		<columns names="id_tessera" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="saldo_punti_neg" type="ck-constr" table="negozi.tessere">
+			<expression> <![CDATA[saldo_punti >= 0]]> </expression>
+	</constraint>
+</table>
+
+<table name="stroico_tessere" layers="0" collapse-mode="2" max-obj-count="4" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="742.883" y="817.899"/>
+	<column name="id_storico" not-null="true">
+		<type name="serial" length="0"/>
+	</column>
+	<column name="codice_tessera" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="negozio_emittente" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="data_emissione" not-null="true">
+		<type name="date" length="0"/>
+	</column>
+	<constraint name="stroico_tessere_pk" type="pk-constr" table="negozi.stroico_tessere">
+		<columns names="id_storico" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<function name="trg_archivia_tessere_negozio"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL UNSAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="trigger" length="0"/>
+	</return-type>
+	<definition> <![CDATA[BEGIN
+	PERFORM negozi.archivia_tessere_negozio (
+    		OLD.id_negozio
+	);
+	RETURN OLD;
+END;]]> </definition>
+</function>
+
+<trigger name="trg_archivia_tessere_negozio" firing-type="BEFORE" per-line="true" constraint="false"
+	 ins-event="false" del-event="true" upd-event="false" trunc-event="false"
+	 table="negozi.negozio">
+		<function signature="negozi.trg_archivia_tessere_negozio()"/>
+</trigger>
+
+<table name="prodotti" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="1350.86" y="386.379"/>
+	<column name="id_prdotto" not-null="true">
+		<type name="serial" length="0"/>
+	</column>
+	<column name="nome" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<column name="descrizione">
+		<type name="text" length="0"/>
+	</column>
+	<constraint name="prodotti_pk" type="pk-constr" table="negozi.prodotti">
+		<columns names="id_prdotto" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="orari" layers="0" collapse-mode="2" max-obj-count="6" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="2208.3" y="21.6967"/>
+	<column name="negozio" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="dow" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="iod" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="apertura" not-null="true">
+		<type name="time" length="0"/>
+	</column>
+	<column name="chiusura" not-null="true">
+		<type name="time" length="0"/>
+	</column>
+	<constraint name="dow_1_7" type="ck-constr" table="negozi.orari">
+			<expression> <![CDATA[dow BETWEEN 1 AND 7]]> </expression>
+	</constraint>
+	<constraint name="iod_1_2" type="ck-constr" table="negozi.orari">
+			<expression> <![CDATA[iod IN (1,2)]]> </expression>
+	</constraint>
+	<constraint name="orari_pk" type="pk-constr" table="negozi.orari">
+		<columns names="negozio,dow,iod" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="cliente_tessera" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="749.654" y="348.561"/>
+	<column name="cliente" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="tessera" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<constraint name="cliente_unique" type="uq-constr" table="negozi.cliente_tessera">
+		<columns names="cliente" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="listino_negozio" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="1891.72" y="270.743"/>
+	<column name="negozio" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="prodotto" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="prezzo_listino" not-null="true">
+		<type name="numeric" length="10" precision="2"/>
+	</column>
+	<constraint name="listino_negozio_pk" type="pk-constr" table="negozi.listino_negozio">
+		<columns names="negozio,prodotto" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="fornitori" layers="0" collapse-mode="2" max-obj-count="7" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="966.137" y="340.803"/>
+	<column name="piva" not-null="true">
+		<type name="char" length="11"/>
+	</column>
+	<column name="ragione_sociale" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<column name="indirizzo">
+		<type name="text" length="0"/>
+	</column>
+	<column name="email">
+		<type name="text" length="0"/>
+	</column>
+	<column name="telefono">
+		<type name="text" length="0"/>
+	</column>
+	<column name="attivo" not-null="true" default-value="true">
+		<type name="boolean" length="0"/>
+	</column>
+	<constraint name="fornitori_pk" type="pk-constr" table="negozi.fornitori">
+		<columns names="piva" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="magazzino_fornitore" layers="0" collapse-mode="2" max-obj-count="6" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="971.353" y="688.197"/>
+	<column name="piva_fornitore">
+		<type name="char" length="11"/>
+	</column>
+	<column name="prodotto" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="quantita">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="prezzo">
+		<type name="numeric" length="10" precision="2"/>
+	</column>
+	<constraint name="quantita" type="ck-constr" table="negozi.magazzino_fornitore">
+			<expression> <![CDATA[quantita>=0]]> </expression>
+	</constraint>
+	<constraint name="prezzo" type="ck-constr" table="negozi.magazzino_fornitore">
+			<expression> <![CDATA[prezzo>=0]]> </expression>
+	</constraint>
+	<constraint name="fornitore_prodotto" type="uq-constr" table="negozi.magazzino_fornitore">
+		<columns names="piva_fornitore,prodotto" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="ordini_fornitori" layers="0" collapse-mode="2" max-obj-count="9" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="1350.99" y="700.44"/>
+	<column name="id_ordine" not-null="true">
+		<type name="serial" length="0"/>
+	</column>
+	<column name="fornitore" not-null="true">
+		<type name="char" length="11"/>
+	</column>
+	<column name="negozio">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="prodotto">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="quantita">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="data_ordine" not-null="true" default-value="now()">
+		<type name="timestamp" length="0"/>
+	</column>
+	<column name="data_consegna">
+		<type name="date" length="0"/>
+	</column>
+	<column name="stato_ordine" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<constraint name="ordini_fornitori_pk" type="pk-constr" table="negozi.ordini_fornitori">
+		<columns names="id_ordine" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="check_stato" type="ck-constr" table="negozi.ordini_fornitori">
+			<expression> <![CDATA[stato_ordine IN ('emesso','consegnato','annullato'))
+]]> </expression>
+	</constraint>
+</table>
+
+<table name="fatture" layers="0" collapse-mode="2" max-obj-count="8" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="2178.58" y="463.531"/>
+	<column name="id_fattura" not-null="true">
+		<type name="serial" length="0"/>
+	</column>
+	<column name="negozio" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="cliente" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="data_fattura" not-null="true" default-value="now()">
+		<type name="date" length="0"/>
+	</column>
+	<column name="punti_sconto" not-null="true" default-value="0">
+		<type name="numeric" length="4"/>
+	</column>
+	<column name="totale_pagato" not-null="true" default-value="0">
+		<type name="numeric" length="10" precision="2"/>
+	</column>
+	<column name="valore_scontato">
+		<type name="numeric" length="10" precision="2"/>
+	</column>
+	<constraint name="fatture_pk" type="pk-constr" table="negozi.fatture">
+		<columns names="id_fattura" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="totale_check" type="ck-constr" table="negozi.fatture">
+			<expression> <![CDATA[totale >= 0]]> </expression>
+	</constraint>
+</table>
+
+<table name="dettagli_fattura" layers="0" collapse-mode="2" max-obj-count="4" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="1700.32" y="726.985"/>
+	<column name="fattura" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="prodotto" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="quantita" not-null="true">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="prezzo_unita" not-null="true">
+		<type name="numeric" length="10" precision="2"/>
+	</column>
+	<constraint name="dettagli_fattura_pk" type="pk-constr" table="negozi.dettagli_fattura">
+		<columns names="fattura,prodotto" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<function name="fn_ricalcola_totale_fattura"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL UNSAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="void" length="0"/>
+	</return-type>
+	<parameter name="id_fattura" in="true">
+		<type name="integer" length="0"/>
+	</parameter>
+	<definition> <![CDATA[DECLARE
+  v_subtot  NUMERIC := 0;
+  v_sconto  NUMERIC := 0;
+  v_totale  NUMERIC := 0;
+BEGIN
+  SELECT COALESCE(SUM(quantita * prezzo_unitario),0)
+    INTO v_subtot
+  FROM negozi.dettagli_fattura
+  WHERE idfattura = _idfattura;
+
+  SELECT COALESCE(sconto_percentuale,0)
+    INTO v_sconto
+  FROM negozi.fattura
+  WHERE idfattura = _idfattura;
+
+  v_totale := GREATEST(v_subtot * (1 - v_sconto/100.0), 0);
+
+  UPDATE negozi.fattura
+     SET totale_pagato = v_totale
+   WHERE idfattura = _idfattura;
+END;]]> </definition>
+</function>
+
+<function name="trg_df_ricalcola"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL UNSAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="trigger" length="0"/>
+	</return-type>
+	<definition> <![CDATA[BEGIN
+  PERFORM negozi.fn_ricalcola_totale_fattura(
+    COALESCE(NEW.idfattura, OLD.idfattura)
+  );
+  RETURN COALESCE(NEW, OLD);
+END $$;]]> </definition>
+</function>
+
+<trigger name="trg_df_totale" firing-type="AFTER" per-line="true" constraint="false"
+	 ins-event="true" del-event="true" upd-event="true" trunc-event="false"
+	 table="negozi.dettagli_fattura">
+		<function signature="negozi.trg_df_ricalcola()"/>
+</trigger>
+
+<function name="trg_ft_sconto_ricalcola"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL UNSAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="trigger" length="0"/>
+	</return-type>
+	<definition> <![CDATA[BEGIN
+  PERFORM negozi.fn_ricalcola_totale_fattura(NEW.idfattura);
+  RETURN NEW;
+END $$;]]> </definition>
+</function>
+
+<trigger name="trg_fattura_sconto_totale" firing-type="AFTER" per-line="true" constraint="false"
+	 ins-event="true" del-event="true" upd-event="true" trunc-event="false"
+	 table="negozi.fatture">
+		<function signature="negozi.trg_ft_sconto_ricalcola()"/>
+</trigger>
+
+<view name="lista_clienti" layers="0" collapse-mode="2" max-obj-count="0" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="1119.51" y="49.2117"/>
+	<definition> <![CDATA[CREATE OR REPLACE VIEW negozi.lista_clienti AS
+SELECT
+  c.id_cliente              AS id,
+  u.username,
+  c.nome,
+  c.cognome,
+  t.codice_tessera          AS numero_tessera,
+  COALESCE(t.saldo_punti,0) AS saldo_punti
+FROM negozi.cliente c
+LEFT JOIN auth.utenti u
+       ON u.id_utente = c.idutente
+LEFT JOIN negozi.tessera t
+       ON t.codice_tessera = c.codice_tessera
+ORDER BY c.cognome, c.nome]]> </definition>
+</view>
+
+<function name="aggiorna_punti"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL UNSAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="void" length="0"/>
+	</return-type>
+	<parameter name="_idcliente">
+		<type name="integer" length="0"/>
+	</parameter>
+	<parameter name="_totale_fattura">
+		<type name="numeric" length="0"/>
+	</parameter>
+	<parameter name="_sconto">
+		<type name="numeric" length="0"/>
+	</parameter>
+	<definition> <![CDATA[BEGIN
+SELECT codice_tessera INTO v_tessera
+		FROM clienti WHERE id_cliente = _idcliente;
+
+IF v_tessera IS NULL THEN
+	RETURN;
+END IF;
+
+punti_fattura := floor(_totale_fattura)::int;
+
+  UPDATE negozi.tessera
+     SET saldo_punti = saldo_punti + - _punti_sconto
+   WHERE id_tessera = v_tessera;
+END;]]> </definition>
+</function>
+
+<function name="trg_aggiorna_punti_tessera"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL SAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="trigger" length="0"/>
+	</return-type>
+	<definition> <![CDATA[BEGIN
+  PERFORM negozi.aggiorna_punti(
+    NEW.id_cliente,
+    NEW.totale_pagato
+	NEW.punti_sconto
+  );
+  RETURN NEW;
+END;]]> </definition>
+</function>
+
+<trigger name="trg_aggiorna_punti_tessera" firing-type="AFTER" per-line="true" constraint="false"
+	 ins-event="true" del-event="false" upd-event="false" trunc-event="false"
+	 table="negozi.fatture">
+		<function signature="negozi.trg_aggiorna_punti_tessera()"/>
+</trigger>
+
+<function name="archivia_tessere_negozio"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL UNSAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="void" length="0"/>
+	</return-type>
+	<parameter name="_idnegozio">
+		<type name="integer" length="0"/>
+	</parameter>
+	<definition> <![CDATA[BEGIN
+  -- Salva nello storico tutte le tessere emesse da questo negozio,
+  -- catturando anche eventuale cliente che le possiede (via cliente.codice_tessera)
+  INSERT INTO negozi.storico_tessere
+    (codice_tessera, negozio_emittente, data_emissione)
+  SELECT t.id_tessera, t.negozio_emittente, t.data_richiesta
+  FROM negozi.tessere t
+  WHERE t.negozio_emittente = _idnegozio;
+
+  DELETE FROM negozi.tessere
+  WHERE negozio_emittente = _idnegozio;
+
+RETURN;
+END;]]> </definition>
+</function>
+
+<function name="trg_agiorna_magazzino_fornitore"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL UNSAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="trigger" length="0"/>
+	</return-type>
+	<definition> <![CDATA[BEGIN
+	PERFORM negozi.aggiorna_magazzino_fornitore (
+    		NEW.fornitore,
+		NEW.prodotto,
+		NEW.quantita
+	);
+	RETURN NEW;
+END;]]> </definition>
+</function>
+
+<trigger name="trigger_aggiorna_magazzino" firing-type="BEFORE" per-line="true" constraint="false"
+	 ins-event="true" del-event="false" upd-event="false" trunc-event="false"
+	 table="negozi.ordini_fornitori">
+		<function signature="negozi.trg_agiorna_magazzino_fornitore()"/>
+</trigger>
+
+<function name="aggiorna_magazzino_fornitore"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL UNSAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="void" length="0"/>
+	</return-type>
+	<parameter name="_fornitore">
+		<type name="integer" length="0"/>
+	</parameter>
+	<parameter name="_prodotto">
+		<type name="integer" length="0"/>
+	</parameter>
+	<parameter name="_quantita">
+		<type name="integer" length="0"/>
+	</parameter>
+	<definition> <![CDATA[BEGIN
+  UPDATE negozi.magazzino_fornitore mf
+     SET quantita = mf.quantita - _quantita
+   WHERE mf.fornitore = _fornitore
+     AND mf.prodotto  = _prodotto
+     AND mf.quantita >= _quantita;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Stock insufficiente: fornitore %, prodotto %, richiesti %',
+      _fornitore, _prodotto, _quantita;
+  END IF;
+
+  RETURN;
+END;
+]]> </definition>
+</function>
+
+<function name="miglior_fornitore"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL UNSAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="integer" length="0"/>
+	</return-type>
+	<parameter name="_prodotto">
+		<type name="integer" length="0"/>
+	</parameter>
+	<parameter name="_quantita">
+		<type name="integer" length="0"/>
+	</parameter>
+	<definition> <![CDATA[DECLARE v_fornitore
+BEGIN
+	SELECT piva_fornitore INTO v_fornitore
+	FROM magazzino_fornitore mf
+	WHERE mf.prodotto = _prodotto AND
+		  mf.quantita >= _quantita
+	ORDER BY mf.prezzo ASC
+	LIMIT 1;
+RETURN v_fornitore;
+END;]]> </definition>
+</function>
+
+<constraint name="fk_utente" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="auth.utenti" table="auth.utente_ruolo">
+	<columns names="id_utente" ref-type="src-columns"/>
+	<columns names="id_utente" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_ruolo" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="auth.ruolo" table="auth.utente_ruolo">
+	<columns names="id_ruolo" ref-type="src-columns"/>
+	<columns names="id_ruolo" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_utente" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="auth.utenti" table="auth.sessions">
+	<columns names="utente" ref-type="src-columns"/>
+	<columns names="id_utente" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_utente" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="auth.utenti" table="auth.reset_token">
+	<columns names="utente" ref-type="src-columns"/>
+	<columns names="id_utente" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="utente_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="auth.utenti" table="negozi.clienti">
+	<columns names="utente" ref-type="src-columns"/>
+	<columns names="id_utente" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="tessera_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="CASCADE" ref-table="negozi.negozio" table="negozi.tessere">
+	<columns names="negozio_emittente" ref-type="src-columns"/>
+	<columns names="id_negozio" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="negozio_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="negozi.negozio" table="negozi.orari">
+	<columns names="negozio" ref-type="src-columns"/>
+	<columns names="id_negozio" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="cliente_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="negozi.clienti" table="negozi.cliente_tessera">
+	<columns names="cliente" ref-type="src-columns"/>
+	<columns names="id_cliente" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="tessera_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="negozi.tessere" table="negozi.cliente_tessera">
+	<columns names="tessera" ref-type="src-columns"/>
+	<columns names="id_tessera" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="negozio_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="negozi.negozio" table="negozi.listino_negozio">
+	<columns names="negozio" ref-type="src-columns"/>
+	<columns names="id_negozio" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="prodotto_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="negozi.prodotti" table="negozi.listino_negozio">
+	<columns names="prodotto" ref-type="src-columns"/>
+	<columns names="id_prdotto" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="piva_fornitore_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="negozi.fornitori" table="negozi.magazzino_fornitore">
+	<columns names="piva_fornitore" ref-type="src-columns"/>
+	<columns names="piva" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="prodotto_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="negozi.prodotti" table="negozi.magazzino_fornitore">
+	<columns names="prodotto" ref-type="src-columns"/>
+	<columns names="id_prdotto" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fornitore_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="negozi.fornitori" table="negozi.ordini_fornitori">
+	<columns names="fornitore" ref-type="src-columns"/>
+	<columns names="piva" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="negozio_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="negozi.negozio" table="negozi.ordini_fornitori">
+	<columns names="negozio" ref-type="src-columns"/>
+	<columns names="id_negozio" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="prodotto_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="negozi.prodotti" table="negozi.ordini_fornitori">
+	<columns names="prodotto" ref-type="src-columns"/>
+	<columns names="id_prdotto" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="negozio_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="negozi.negozio" table="negozi.fatture">
+	<columns names="negozio" ref-type="src-columns"/>
+	<columns names="id_negozio" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="cliente_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="negozi.clienti" table="negozi.fatture">
+	<columns names="cliente" ref-type="src-columns"/>
+	<columns names="id_cliente" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fattura_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="negozi.fatture" table="negozi.dettagli_fattura">
+	<columns names="fattura" ref-type="src-columns"/>
+	<columns names="id_fattura" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="prodotto_fk" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="negozi.prodotti" table="negozi.dettagli_fattura">
+	<columns names="prodotto" ref-type="src-columns"/>
+	<columns names="id_prdotto" ref-type="dst-columns"/>
+</constraint>
+
+<relationship name="rel_utente_ruolo_utenti" type="relfk" layers="0"
+	 src-table="auth.utente_ruolo"
+	 dst-table="auth.utenti" reference-fk="fk_utente"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_utente_ruolo_ruolo" type="relfk" layers="0"
+	 src-table="auth.utente_ruolo"
+	 dst-table="auth.ruolo" reference-fk="fk_ruolo"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_sessions_utenti" type="relfk" layers="0"
+	 src-table="auth.sessions"
+	 dst-table="auth.utenti" reference-fk="fk_utente"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_reset_token_utenti" type="relfk" layers="0"
+	 src-table="auth.reset_token"
+	 dst-table="auth.utenti" reference-fk="fk_utente"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_tessere_negozio" type="relfk" layers="0"
+	 src-table="negozi.tessere"
+	 dst-table="negozi.negozio" reference-fk="tessera_fk"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_orari_negozio" type="relfk" layers="0"
+	 src-table="negozi.orari"
+	 dst-table="negozi.negozio" reference-fk="negozio_fk"
+	 src-required="false" dst-required="true">
+	<label ref-type="name-label">
+		<position x="107.51" y="37.1617"/>
+	</label>
+</relationship>
+
+<relationship name="rel_cliente_tessera_clienti" type="relfk" layers="0"
+	 src-table="negozi.cliente_tessera"
+	 dst-table="negozi.clienti" reference-fk="cliente_fk"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_listino_negozio_negozio" type="relfk" layers="0"
+	 src-table="negozi.listino_negozio"
+	 dst-table="negozi.negozio" reference-fk="negozio_fk"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_listino_negozio_prodotti" type="relfk" layers="0"
+	 src-table="negozi.listino_negozio"
+	 dst-table="negozi.prodotti" reference-fk="prodotto_fk"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_magazzino_fornitore_fornitori" type="relfk" layers="0"
+	 src-table="negozi.magazzino_fornitore"
+	 dst-table="negozi.fornitori" reference-fk="piva_fornitore_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_magazzino_fornitore_prodotti" type="relfk" layers="0"
+	 src-table="negozi.magazzino_fornitore"
+	 dst-table="negozi.prodotti" reference-fk="prodotto_fk"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_ordini_fornitori_fornitori" type="relfk" layers="0"
+	 src-table="negozi.ordini_fornitori"
+	 dst-table="negozi.fornitori" reference-fk="fornitore_fk"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_ordini_fornitori_negozio" type="relfk" layers="0"
+	 src-table="negozi.ordini_fornitori"
+	 dst-table="negozi.negozio" reference-fk="negozio_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_fatture_negozio" type="relfk" layers="0"
+	 src-table="negozi.fatture"
+	 dst-table="negozi.negozio" reference-fk="negozio_fk"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_fatture_clienti" type="relfk" layers="0"
+	 src-table="negozi.fatture"
+	 dst-table="negozi.clienti" reference-fk="cliente_fk"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_dettagli_fattura_fatture" type="relfk" layers="0"
+	 src-table="negozi.dettagli_fattura"
+	 dst-table="negozi.fatture" reference-fk="fattura_fk"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_dettagli_fattura_prodotti" type="relfk" layers="0"
+	 src-table="negozi.dettagli_fattura"
+	 dst-table="negozi.prodotti" reference-fk="prodotto_fk"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_clienti_utenti" type="relfk" layers="0"
+	 src-table="negozi.clienti"
+	 dst-table="auth.utenti" reference-fk="utente_fk"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_ordini_fornitori_prodotti" type="relfk" layers="0"
+	 src-table="negozi.ordini_fornitori"
+	 dst-table="negozi.prodotti" reference-fk="prodotto_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_cliente_tessera_tessere" type="relfk" layers="0"
+	 src-table="negozi.cliente_tessera"
+	 dst-table="negozi.tessere" reference-fk="tessera_fk"
+	 src-required="false" dst-required="true"/>
+
+</dbmodel>

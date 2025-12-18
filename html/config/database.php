@@ -1,10 +1,11 @@
 <?php
 /**
- * Configurazione Database PostgreSQL con .env
- */
-
-/**
- * Carica le variabili di ambiente dal file .env
+ * Carica le variabili di ambiente da un file .env.
+ *
+ * @param string $path Percorso del file .env da caricare.
+ * @return void
+ *
+ * Termina l'esecuzione con die() se il file .env non viene trovato.
  */
 function loadEnv($path) {
     if (!file_exists($path)) {
@@ -12,6 +13,9 @@ function loadEnv($path) {
     }
     
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) {
+        die("Errore lettura file .env");
+    }
     foreach ($lines as $line) {
         if (strpos(trim($line), '#') === 0) {
             continue; // Salta i commenti
