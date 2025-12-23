@@ -25,7 +25,7 @@ require_once '../config/database.php';
         <div class="container-fluid">
             <!-- Solo il titolo a sinistra -->
             <a class="navbar-brand" href="dashboard_manager.php">
-                <i class="bi bi-briefcase"></i> Dashboard Manager
+                Dashboard Manager
             </a>
             
             <!-- Solo dropdown utente a destra -->
@@ -53,11 +53,6 @@ require_once '../config/database.php';
     <div class="container my-5">
         <div class="row">
             <div class="col-12">
-                <div class="alert alert-success">
-                    <i class="bi bi-check-circle"></i>
-                    <strong>Benvenuto nella Dashboard Manager!</strong> 
-                    Gestisci clienti, negozi, prodotti e fornitori.
-                </div>
                 
                 <!-- Cards principali -->
                 <div class="row">
@@ -109,47 +104,6 @@ require_once '../config/database.php';
                                 <a href="gestione_fornitori.php" class="btn btn-light mt-auto">
                                     <i class="bi bi-arrow-right"></i> Gestisci
                                 </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Statistiche rapide -->
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <h5><i class="bi bi-graph-up"></i> Statistiche Rapide</h5>
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="card border-primary">
-                                    <div class="card-body text-center">
-                                        <h3 class="text-primary">--</h3>
-                                        <small class="text-muted">Clienti Totali</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card border-success">
-                                    <div class="card-body text-center">
-                                        <h3 class="text-success">--</h3>
-                                        <small class="text-muted">Negozi Attivi</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card border-info">
-                                    <div class="card-body text-center">
-                                        <h3 class="text-info">--</h3>
-                                        <small class="text-muted">Prodotti</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card border-warning">
-                                    <div class="card-body text-center">
-                                        <h3 class="text-warning">--</h3>
-                                        <small class="text-muted">Fornitori</small>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>

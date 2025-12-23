@@ -2,7 +2,7 @@
 require_once '../config/database.php';
 
 // Test della connessione
-$db = Database::getInstance();
+$db = getDB();
 $test_result = $db->testConnection();
 
 // Test query aggiuntive se la connessione funziona
@@ -41,7 +41,7 @@ if ($test_result['success']) {
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="../index.php">
-                <i class="bi bi-shop"></i> Negozi
+               Retrogame Store
             </a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="../index.php">← Torna alla Home</a>
@@ -54,14 +54,10 @@ if ($test_result['success']) {
             <div class="col-md-10">
                 <div class="card">
                     <div class="card-header">
-                        <h4><i class="bi bi-database-check"></i> Test Connessione Database PostgreSQL</h4>
+                        <h4> Test Connessione Database PostgreSQL</h4>
                     </div>
                     <div class="card-body">
                         <?php if ($test_result['success']): ?>
-                            <div class="alert alert-success">
-                                <i class="bi bi-check-circle"></i> 
-                                <strong>Successo!</strong> <?= $test_result['message'] ?>
-                            </div>
                             
                             <div class="row">
                                 <div class="col-md-6">

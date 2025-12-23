@@ -64,6 +64,16 @@
         </div>
     <?php endif; ?>
 
+    <?php session_start(); ?>
+    <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true): ?>
+        <?php
+            // Utente già loggato, reindirizza alla dashboard appropriata
+            $redirect_url = ($_SESSION['user_tipo'] === 'manager') ? 'pages/dashboard_manager.php' : 'pages/dashboard_cliente.php';
+            header("Location: $redirect_url");
+            exit;
+        ?>
+    <?php endif; ?>
+
     <div class="login-container">
         <div class="container">
             <div class="row justify-content-center">

@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-// Verifica se l'utente è loggato e è un manager
+// Verifica se l'utente è loggato ed è un manager
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSION['user_tipo'] !== 'manager') {
     header('Location: ../index.php?error=access_denied');
     exit;
@@ -9,23 +9,77 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSI
 
 require_once '../config/database.php';
 
-$message = '';
+// Genera CSRF token se non esiste
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Recupera messaggio dalla sessione (dopo redirect)
+$message = $_SESSION['message'] ?? '';
+unset($_SESSION['message']); // Rimuovi dopo averlo letto
+
 $error = '';
 $action = $_GET['action'] ?? '';
 
-// Gestione azioni POST
+// Gestione azioni POST gestione_clienti.php?action=create update o delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    // Verifica CSRF token
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die('CSRF token non valido. Possibile attacco CSRF.');
+    }
     $nome = trim($_POST['nome'] ?? '');
+    $cf = trim($_POST['cf'] ?? '');
     $cognome = trim($_POST['cognome'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $telefono = trim($_POST['telefono'] ?? '');
     
     try {
-        $db = Database::getInstance();
+        $db = getDB();
         
+        // Aggiorna cliente
+        if ($_POST['action'] === 'update') {
+            if (empty($nome) || empty($cf) || empty($email)) {
+                throw new RuntimeException('Nome, CF ed email sono obbligatori.');
+            }
+
+            // ID cliente viene dall'URL, non dal POST
+            $id_cliente = (int)($_GET['id'] ?? 0);
+            if ($id_cliente <= 0) {
+                throw new RuntimeException('ID cliente non valido.');
+            }
+
+            // Inizia transazione per aggiornare sia utente che cliente
+            $db->query("BEGIN");
+
+            try {
+                // 1. Aggiorna email in auth.utenti
+                $db->query("UPDATE auth.utenti SET email = ?
+                            WHERE id_utente = (SELECT utente FROM negozi.clienti WHERE id_cliente = ?)",
+                            [$email, $id_cliente]);
+
+                // 2. Aggiorna dati cliente in negozi.clienti
+                $db->query("UPDATE negozi.clienti SET nome = ?, cognome = NULLIF(?,''), cf = ?, telefono = ?
+                            WHERE id_cliente = ?",
+                            [$nome, $cognome, $cf, $telefono, $id_cliente]);
+
+                // Conferma transazione
+                $db->query("COMMIT");
+
+                // Redirect per evitare re-submit e pulire $_POST (Pattern PRG: Post-Redirect-Get)
+                $_SESSION['message'] = "Cliente modificato correttamente.";
+                header('Location: gestione_clienti.php');
+                exit;
+
+            } catch (Exception $e) {
+                // Rollback in caso di errore
+                $db->query("ROLLBACK");
+                throw $e;
+            }
+        }
+
         if ($_POST['action'] === 'create') {
-            if (empty($nome) || empty($cognome) || empty($email)) {
-                throw new RuntimeException('Nome, cognome ed email sono obbligatori.');
+            if (empty($nome) || empty($cf) || empty($email)) {
+                throw new RuntimeException('Nome, CF ed email sono obbligatori.');
             }
             
             // Inizia transazione per creare sia utente che cliente
@@ -34,25 +88,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             try {
                 // 1. Crea utente in auth.utenti
                 $password_hash = password_hash('password123', PASSWORD_DEFAULT);
-                $username = strtolower($nome . $cognome);
-                
-                $stmt = $db->query("INSERT INTO auth.utenti (email, username, password_hash, attivo) VALUES (?, ?, ?, TRUE) RETURNING id_utente", 
-                    [$email, $username, $password_hash]);
+
+                $stmt = $db->query("INSERT INTO auth.utenti (email, password, attivo) VALUES (?, ?, TRUE) RETURNING id_utente",
+                    [$email, $password_hash]);
                 $user_data = $stmt->fetch();
                 $user_id = $user_data['id_utente'];
-                
-                // 2. Genera numero tessera fedeltà
-                $tessera_numero = 'T' . str_pad($user_id, 6, '0', STR_PAD_LEFT);
-                
-                // 3. Crea cliente in negozi.clienti
-                $db->query("INSERT INTO negozi.clienti (id_utente, nome, cognome, telefono, numero_tessera) VALUES (?, ?, ?, ?, ?)", 
-                    [$user_id, $nome, $cognome, $telefono, $tessera_numero]);
+
+                // 2. Crea cliente in negozi.clienti
+                $db->query("INSERT INTO negozi.clienti (utente, cf, nome, cognome) VALUES (?, ?, ?, NULLIF(?,''))",
+                    [$user_id, $cf, $nome, $cognome]);
                 
                 // Conferma transazione
                 $db->query("COMMIT");
-                
-                $message = "Cliente creato! Email: $email - Password: password123 - Tessera: $tessera_numero";
-                $action = ''; // Torna alla lista
+
+                // Redirect per evitare re-submit e pulire $_POST (Pattern PRG: Post-Redirect-Get)
+                $_SESSION['message'] = "Cliente creato! Email: $email - Password: password123";
+                header('Location: gestione_clienti.php');
+                exit;
                 
             } catch (Exception $e) {
                 // Rollback in caso di errore
@@ -60,16 +112,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 throw $e;
             }
         }
-        
+
         if ($_POST['action'] === 'delete') {
             $id_cliente = (int)($_POST['id_cliente'] ?? 0);
             if ($id_cliente <= 0) {
                 throw new RuntimeException('ID cliente non valido.');
             }
-            
+
             // Elimina cliente (la view non supporta DELETE, usiamo le tabelle base)
             $db->query("DELETE FROM negozi.clienti WHERE id = ?", [$id_cliente]);
-            $message = "Cliente eliminato correttamente.";
+
+            // Redirect per evitare re-submit e pulire $_POST
+            $_SESSION['message'] = "Cliente eliminato correttamente.";
+            header('Location: gestione_clienti.php');
+            exit;
         }
         
     } catch (Exception $e) {
@@ -81,10 +137,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
-// Carica lista clienti dalla view
+// Carica dati del cliente se siamo in modalità modifica (GET, non POST!)
+$cliente = [];
+if ($action === 'modifica' && isset($_GET['id'])) {
+    $id_cliente = (int)$_GET['id'];
+    try {
+        $db = getDB();
+        $stmt = $db->query("SELECT c.id_cliente, c.nome, c.cognome, c.cf, u.email, c.telefono
+                            FROM negozi.clienti c
+                            JOIN auth.utenti u ON c.utente = u.id_utente
+                            WHERE c.id_cliente = ?", [$id_cliente]);
+        $cliente = $stmt->fetch();
+
+        if (!$cliente) {
+            $error = "Cliente non trovato.";
+            $action = ''; // Torna alla lista
+        }
+    } catch (Exception $e) {
+        $error = 'Errore nel caricamento del cliente: ' . $e->getMessage();
+        $action = ''; // Torna alla lista
+    }
+}
+
+// Carica lista clienti dalla view (oppure query diretta se la view non esiste)
 try {
-    $db = Database::getInstance();
-    $stmt = $db->query("SELECT id, username, nome, cognome, numero_tessera, saldo_punti FROM negozi.lista_clienti ORDER BY id");
+    $db = getDB();
+
+    // Query diretta dalle view per i dati dei clienti con tessera dato un negozio se il negozio non viene fornito
+    $stmt = $db->query("SELECT c.id_cliente as id, c.nome, c.cognome, u.email,
+                               COALESCE(t.id_tessera::text, 'N/A') as numero_tessera,
+                               COALESCE(t.saldo_punti, 0) as saldo_punti
+                        FROM negozi.clienti c
+                        JOIN auth.utenti u ON c.utente = u.id_utente
+                        LEFT JOIN negozi.cliente_tessera ct ON c.id_cliente = ct.cliente
+                        LEFT JOIN negozi.tessere t ON ct.tessera = t.id_tessera
+                        ORDER BY c.id_cliente");
     $clienti = $stmt->fetchAll();
 } catch (Exception $e) {
     $error = 'Errore nel caricamento: ' . $e->getMessage();
@@ -106,7 +193,7 @@ try {
     <nav class="navbar navbar-expand-lg navbar-dark bg-warning">
         <div class="container-fluid">
             <a class="navbar-brand" href="dashboard_manager.php">
-                <i class="bi bi-briefcase"></i> Dashboard Manager
+               Dashboard Manager
             </a>
             
             <div class="navbar-nav ms-auto">
@@ -141,7 +228,7 @@ try {
 
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-people"></i> Gestione Clienti</h2>
+            <h2>Gestione Clienti</h2>
             <?php if ($action !== 'new'): ?>
                 <a href="?action=new" class="btn btn-primary">
                     <i class="bi bi-person-plus"></i> Nuovo Cliente
@@ -164,55 +251,65 @@ try {
             </div>
         <?php endif; ?>
 
-        <?php if ($action === 'new'): ?>
+        <?php if ($action === 'new' || $action === 'modifica'): ?>
             <!-- Form Nuovo Cliente -->
             <div class="row justify-content-center">
                 <div class="col-md-8">
                     <div class="card">
                         <div class="card-header">
-                            <h4><i class="bi bi-person-plus"></i> Nuovo Cliente</h4>
+                            <h4><i class="bi <?= $action === 'new' ? 'bi-person-plus' : 'bi-person-gear' ?>"></i> <?= $action === 'new' ? 'Nuovo Cliente' : 'Modifica Cliente' ?></h4>
                         </div>
                         <div class="card-body">
                             <form method="POST">
-                                <input type="hidden" name="action" value="create">
-                                
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                <input type="hidden" name="action" value="<?= $action== "new" ? "create" : "update" ?>">
+                                <!-- Nome e Cognome -->
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="nome" class="form-label">Nome</label>
-                                            <input type="text" class="form-control" id="nome" name="nome" 
-                                                   value="<?= htmlspecialchars($_POST['nome'] ?? '') ?>" required>
+                                            <label for="nome" class="form-label">Nome*</label>
+                                            <input type="text" class="form-control" id="nome" name="nome"
+                                                   value="<?= htmlspecialchars($_POST['nome'] ?? $cliente['nome'] ?? '') ?>" required>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="cognome" class="form-label">Cognome</label>
-                                            <input type="text" class="form-control" id="cognome" name="cognome" 
-                                                   value="<?= htmlspecialchars($_POST['cognome'] ?? '') ?>" required>
+                                            <input type="text" class="form-control" id="cognome" name="cognome"
+                                                   value="<?= htmlspecialchars($_POST['cognome'] ?? $cliente['cognome'] ?? '') ?>">
                                         </div>
                                     </div>
                                 </div>
-                                
+                                <!-- CF -->
                                 <div class="mb-3">
-                                    <label for="email" class="form-label">Email</label>
-                                    <input type="email" class="form-control" id="email" name="email" 
-                                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
+                                    <label for="cf" class="form-label">CF*</label>
+                                    <input type="text" class="form-control" id="cf" name="cf"
+                                           value="<?= htmlspecialchars($_POST['cf'] ?? $cliente['cf'] ?? '') ?>" required>
                                 </div>
-                                
+                                <!-- Email -->
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email*</label>
+                                    <input type="email" class="form-control" id="email" name="email"
+                                           value="<?= htmlspecialchars($_POST['email'] ?? $cliente['email'] ?? '') ?>" required>
+                                </div>
+                                <!-- Telefono -->
                                 <div class="mb-3">
                                     <label for="telefono" class="form-label">Telefono</label>
-                                    <input type="tel" class="form-control" id="telefono" name="telefono" 
-                                           value="<?= htmlspecialchars($_POST['telefono'] ?? '') ?>">
+                                    <input type="tel" class="form-control" id="telefono" name="telefono"
+                                           value="<?= htmlspecialchars($_POST['telefono'] ?? $cliente['telefono'] ?? '') ?>">
                                 </div>
-                                
-                                <div class="alert alert-info">
-                                    <i class="bi bi-info-circle"></i>
-                                    <strong>Nota:</strong> La password di default sarà "password123" e verrà generata automaticamente una tessera fedeltà.
-                                </div>
-                                
+                                <!-- Nota Informativa -->
+                                <?php if ($action === 'new'): ?>
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>Nota:</strong> La password di default sarà "password123". La tessera fedeltà può essere richiesta successivamente.
+                                    </div>
+                                <?php endif; ?>
+                                <!-- Bottoni per Invio Dati-->
                                 <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="bi bi-check-circle"></i> Crea Cliente
+                                    <button type="submit" class="btn btn-success">            
+                                        <i class="bi bi-check-circle"></i> 
+                                        <?= $action === 'new' ? 'Crea Cliente' : 'Aggiorna Cliente' ?>
                                     </button>
                                     <a href="gestione_clienti.php" class="btn btn-secondary">
                                         <i class="bi bi-x-circle"></i> Annulla
@@ -227,7 +324,7 @@ try {
             <!-- Lista Clienti -->
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="bi bi-list"></i> Lista Clienti</h5>
+                    <h5>Lista Clienti</h5>
                 </div>
                 <div class="card-body">
                     <?php if (empty($clienti)): ?>
@@ -244,7 +341,7 @@ try {
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Username</th>
+                                        <th>Email</th>
                                         <th>Nome Completo</th>
                                         <th>Tessera</th>
                                         <th>Punti</th>
@@ -255,16 +352,16 @@ try {
                                     <?php foreach ($clienti as $cliente): ?>
                                         <tr>
                                             <td>
-                                                <span class="badge bg-secondary"><?= $cliente['id'] ?></span>
+                                                <span><?= $cliente['id'] ?></span>
                                             </td>
                                             <td>
-                                                <strong><?= htmlspecialchars($cliente['username']) ?></strong>
+                                                <strong><?= $cliente['email'] ?></strong>
                                             </td>
                                             <td>
-                                                <?= htmlspecialchars($cliente['nome'] . ' ' . $cliente['cognome']) ?>
+                                                <?= $cliente['nome'] . ' ' . $cliente['cognome'] ?>
                                             </td>
                                             <td>
-                                                <span class="badge bg-info"><?= htmlspecialchars($cliente['numero_tessera']) ?></span>
+                                                <span class="badge bg-info"><?= $cliente['numero_tessera'] ?></span>
                                             </td>
                                             <td>
                                                 <span class="badge bg-success"><?= $cliente['saldo_punti'] ?> pt</span>
@@ -296,9 +393,8 @@ try {
     
     <script>
         function modificaCliente(id) {
-            // Per ora solo alert, poi implementeremo
-            alert('Modifica cliente ID: ' + id);
-            // TODO: Implementare edit inline o redirect
+        
+            window.location.href = 'gestione_clienti.php?action=modifica&id=' + id;
         }
         
         function eliminaCliente(id, nome) {
@@ -307,6 +403,7 @@ try {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.innerHTML = `
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="id_cliente" value="${id}">
                 `;
