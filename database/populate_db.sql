@@ -37,7 +37,7 @@ ON CONFLICT (nome) DO NOTHING;
 
 -- MANAGER (password: retro1980)
 INSERT INTO auth.utenti (email, password, attivo) VALUES
-  ('manager@retrogaming.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE)
+  ('manager@retrogaming.it', '$2y$12$tVK3xXy63eHfjqSvsig0vOfbqw8LI0luAMSLs.9nN3Yp6pg4FNJA.', TRUE)
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO auth.utente_ruolo (id_utente, id_ruolo)
@@ -93,13 +93,12 @@ INSERT INTO negozi.clienti (utente, cf, nome, cognome, telefono) VALUES
 ON CONFLICT (cf) DO NOTHING;
 
 -- NEGOZI (5 città)
-INSERT INTO negozi.negozio (responsabile, indirizzo) VALUES
-  ((SELECT id_utente FROM auth.utenti WHERE email = 'manager@retrogaming.it'), 'Via Dante 42, 20121 Milano'),
-  ((SELECT id_utente FROM auth.utenti WHERE email = 'manager@retrogaming.it'), 'Corso Vittorio Emanuele 156, 00186 Roma'),
-  ((SELECT id_utente FROM auth.utenti WHERE email = 'manager@retrogaming.it'), 'Via Garibaldi 88, 10122 Torino'),
-  ((SELECT id_utente FROM auth.utenti WHERE email = 'manager@retrogaming.it'), 'Piazza Maggiore 15, 40124 Bologna'),
-  ((SELECT id_utente FROM auth.utenti WHERE email = 'manager@retrogaming.it'), 'Via Mazzini 33, 50123 Firenze');
-
+INSERT INTO negozi.negozio (nome_negozio, responsabile, indirizzo) VALUES
+  ('Retro Gaming Milano', 'Mario Plummer', 'Via Dante 42, 20121 Milano'),
+  ('Retro Gaming Roma', 'Luigi Plummer', 'Corso Vittorio Emanuele 156, 00186 Roma'),
+  ('Retro Gaming Torino', 'Bruno Frank', 'Via Garibaldi 88, 10122 Torino'),
+  ('Retro Gaming Bologna', 'Guybrush Threepwood', 'Piazza Maggiore 15, 40124 Bologna'),
+  ('Retro Gaming Firenze', 'Conan Barbarian', 'Via Mazzini 33, 50123 Firenze');
 -- ORARI: Lun-Sab 9:30-13:00 (mattina, iod=1)
 INSERT INTO negozi.orari (negozio, dow, iod, apertura, chiusura)
 SELECT n.id_negozio, g, 1, '09:30:00', '13:00:00'
@@ -119,7 +118,7 @@ INSERT INTO negozi.orari (negozio, dow, iod, apertura, chiusura)
 SELECT n.id_negozio, 7, 2, '16:00:00', '19:00:00' FROM negozi.negozio n;
 
 -- FORNITORI
-INSERT INTO negozi.fornitori (piva, ragione_sociale, indirizzo, email, telefono, attivo) VALUES
+INSERT INTO negozi.fornitori (piva, nome_fornitore, indirizzo, email, telefono, attivo) VALUES
   ('01234567890', 'Vintage Computer Wholesale SRL', 'Via Industriale 45, Segrate (MI)', 'info@vintagewholesale.it', '02-87654321', TRUE),
   ('09876543210', 'Retro Gaming Italia SPA', 'Viale Europa 123, Roma', 'vendite@retrogamingitalia.it', '06-12345678', TRUE),
   ('11223344556', 'Classic Electronics Distribution', 'Corso Francia 88, Torino', 'ordini@classicelectronics.it', '011-9876543', TRUE),
@@ -127,7 +126,7 @@ INSERT INTO negozi.fornitori (piva, ragione_sociale, indirizzo, email, telefono,
 ON CONFLICT (piva) DO NOTHING;
 
 -- PRODOTTI (30 prodotti vintage: computer, console, accessori e giochi iconici)
-INSERT INTO negozi.prodotti (nome, descrizione, immagine_url) VALUES
+INSERT INTO negozi.prodotti (nome_prodotto, descrizione, immagine_url) VALUES
   -- COMPUTER (7)
   ('Commodore 64', 'Il computer più venduto della storia! CPU MOS 6510 a 1MHz, 64KB RAM, chip sonoro SID leggendario. Include alimentatore e cavi. Perfettamente funzionante, testato.', '/images/products/c64.jpg'),
   ('Commodore Amiga 500', 'La rivoluzione multimediale! CPU Motorola 68000 a 7.14MHz, 512KB Chip RAM espandibile, grafica OCS con 4096 colori, audio stereo Paula. Sistema Workbench 1.3 su floppy. Condizioni eccellenti.', '/images/products/amiga500.jpg'),

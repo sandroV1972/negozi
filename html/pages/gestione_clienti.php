@@ -262,7 +262,7 @@ try {
                         <div class="card-body">
                             <form method="POST">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                                <input type="hidden" name="action" value="<?= $action== "new" ? "create" : "update" ?>">
+                     <input type="hidden" name="action" value="<?= $action== "new" ? "create" : "update" ?>">
                                 <!-- Nome e Cognome -->
                                 <div class="row">
                                     <div class="col-md-6">

@@ -218,6 +218,25 @@ class Database {
         }
     }
 
+    /**
+     * Ottiene l'ultimo ID inserito dalla sequenza specificata.
+     *
+     * @param string $sequenceName Nome della sequenza PostgreSQL (es. 'negozi.negozio_id_negozio_seq')
+     * @return int L'ultimo valore della sequenza
+     * @throws Exception Se la query fallisce
+     */
+    public function lastInsertId($sequenceName) {
+        // Escape usando pg_escape_literal per passare come stringa a currval()
+        $escapedSeq = pg_escape_literal($this->connection, $sequenceName);
+        $result = pg_query($this->connection, "SELECT currval($escapedSeq)");
+        if (!$result) {
+            throw new Exception("lastInsertId error: " . pg_last_error($this->connection));
+        }
+        $row = pg_fetch_row($result);
+        pg_free_result($result);
+        return (int)$row[0];
+    }
+
 }
 
 /**

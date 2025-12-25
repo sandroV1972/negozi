@@ -40,7 +40,7 @@ require_once '../config/database.php';
                             <i class="bi bi-key"></i> Cambia password
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="logout.php">
+                        <li><a class="dropdown-item" href="../logout.php">
                             <i class="bi bi-box-arrow-right"></i> Logout
                         </a></li>
                     </ul>
@@ -108,7 +108,19 @@ require_once '../config/database.php';
                         </div>
                     </div>
                 </div>
-                
+
+                <!-- Views -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h5><i class="bi bi-eye"></i> Visualizzazioni</h5>
+                        <div class="btn-group flex-wrap" role="group">
+                            <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalClientiTop">
+                                <i class="bi bi-star"></i> Clienti 300 punti
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Azioni rapide -->
                 <div class="row mt-4">
                     <div class="col-12">
@@ -131,6 +143,87 @@ require_once '../config/database.php';
                             </a>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Prodotti per Negozio -->
+    <div class="modal fade" id="modalProdottiNegozio" tabindex="-1" aria-labelledby="modalProdottiNegozioLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalProdottiNegozioLabel">
+                        <i class="bi bi-box-seam"></i> Prodotti per Negozio
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Contenuto View -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ordini Fornitori -->
+    <div class="modal fade" id="modalOrdiniFornitori" tabindex="-1" aria-labelledby="modalOrdiniFornitoriLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="modalOrdiniFornitoriLabel">
+                        <i class="bi bi-card-list"></i> Ordini Fornitori
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Contenuto View -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Clienti Top 300 punti -->
+    <div class="modal fade" id="modalClientiTop" tabindex="-1" aria-labelledby="modalClientiTopLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="modalClientiTopLabel">
+                        <i class="bi bi-star"></i> Clienti con 300+ punti
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Contenuto View -->
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Fornitori Attivi -->
+    <div class="modal fade" id="modalFornitoriAttivi" tabindex="-1" aria-labelledby="modalFornitoriAttiviLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="modalFornitoriAttiviLabel">
+                        <i class="bi bi-truck-loading"></i> Fornitori Attivi
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Contenuto View -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
                 </div>
             </div>
         </div>
