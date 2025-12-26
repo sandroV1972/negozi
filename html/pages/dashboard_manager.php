@@ -198,9 +198,14 @@ require_once '../config/database.php';
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <!-- Contenuto View -->
-
+                <div class="modal-body" id="modalClientiTopBody">
+                    <!-- Contenuto caricato via fetch -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">Caricamento...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Caricamento dati...</p>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
@@ -230,5 +235,80 @@ require_once '../config/database.php';
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Carica dati clienti 300+ punti quando si apre la modale
+        document.getElementById('modalClientiTop').addEventListener('show.bs.modal', function () {
+            const body = document.getElementById('modalClientiTopBody');
+
+            // Mostra spinner
+            body.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-info" role="status">
+                        <span class="visually-hidden">Caricamento...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Caricamento dati...</p>
+                </div>
+            `;
+
+            // Fetch dati dall'API
+            fetch('api/clienti_top.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data.length > 0) {
+                        let html = `
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nome</th>
+                                            <th>Email</th>
+                                            <th>Punti</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        data.data.forEach(cliente => {
+                            html += `
+                                <tr>
+                                    <td>${cliente.id_cliente}</td>
+                                    <td>${cliente.nome} ${cliente.cognome || ''}</td>
+                                    <td>${cliente.email}</td>
+                                    <td><span class="badge bg-success">${cliente.saldo_punti} pt</span></td>
+                                </tr>
+                            `;
+                        });
+                        html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="text-muted mt-2">Totale: ${data.count} clienti con 300+ punti</p>
+                        `;
+                        body.innerHTML = html;
+                    } else if (data.success && data.data.length === 0) {
+                        body.innerHTML = `
+                            <div class="text-center py-5">
+                                <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                                <p class="mt-3 text-muted">Nessun cliente con 300+ punti trovato.</p>
+                            </div>
+                        `;
+                    } else {
+                        body.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i> Errore: ${data.error || 'Errore sconosciuto'}
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    body.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> Errore di connessione: ${error.message}
+                        </div>
+                    `;
+                });
+        });
+    </script>
 </body>
 </html>

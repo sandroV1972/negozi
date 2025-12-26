@@ -60,15 +60,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             WHERE id_negozio =  ?;",
                             [$nome_negozio, $indirizzo, $responsabile, $id_negozio]);
 
-                // 2. Aggiorna orari negozio in negozi.orari
-                for ($dow = 0; $dow <6; $dow++) {
-                    $db->query("UPDATE negozi.orari SET apertura = ?, chiusura = ?
-                        WHERE negozio = ? AND iod = 1 AND dow = ?;",
-                        [$orario_apertura_am, $orario_chiusura_am, $id_negozio, $dow]);
-
-                    $db->query("UPDATE negozi.orari SET apertura = ?, chiusura = ?
-                        WHERE negozio = ? AND iod = 2 AND dow = ?;",
-                        [$orario_apertura_pm, $orario_chiusura_pm, $id_negozio, $dow]);
+                // 2. Aggiorna orari negozio in negozi.orari (solo se forniti)
+                if (!empty($orario_apertura_am) && !empty($orario_chiusura_am)) {
+                    for ($dow = 1; $dow <= 5; $dow++) {
+                        $db->query("UPDATE negozi.orari SET apertura = ?, chiusura = ?
+                            WHERE negozio = ? AND iod = 1 AND dow = ?;",
+                            [$orario_apertura_am, $orario_chiusura_am, $id_negozio, $dow]);
+                    }
+                }
+                if (!empty($orario_apertura_pm) && !empty($orario_chiusura_pm)) {
+                    for ($dow = 1; $dow <= 5; $dow++) {
+                        $db->query("UPDATE negozi.orari SET apertura = ?, chiusura = ?
+                            WHERE negozio = ? AND iod = 2 AND dow = ?;",
+                            [$orario_apertura_pm, $orario_chiusura_pm, $id_negozio, $dow]);
+                    }
                 }
 
                 // Conferma transazione
@@ -167,6 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 // Carica dati del negozio se siamo in modalità modifica (GET, non POST!)
 $negozio = [];
+$orari = ['apertura_am' => '', 'chiusura_am' => '', 'apertura_pm' => '', 'chiusura_pm' => ''];
 if ($action === 'modifica' && isset($_GET['id'])) {
     $id_negozio = (int)$_GET['id'];
     try {
@@ -179,6 +185,21 @@ if ($action === 'modifica' && isset($_GET['id'])) {
         if (!$negozio) {
             $error = "Negozio non trovato.";
             $action = ''; // Torna alla lista
+        } else {
+            // Carica orari esistenti (prendo il primo giorno disponibile come riferimento)
+            // iod = 1 -> mattina (AM), iod = 2 -> pomeriggio (PM)
+            $stmt = $db->query("SELECT iod, apertura, chiusura FROM negozi.orari
+                                WHERE negozio = ? ORDER BY dow, iod LIMIT 2", [$id_negozio]);
+            $orariRows = $stmt->fetchAll();
+            foreach ($orariRows as $row) {
+                if ($row['iod'] == 1) { // Mattina
+                    $orari['apertura_am'] = substr($row['apertura'], 0, 5);
+                    $orari['chiusura_am'] = substr($row['chiusura'], 0, 5);
+                } else if ($row['iod'] == 2) { // Pomeriggio
+                    $orari['apertura_pm'] = substr($row['apertura'], 0, 5);
+                    $orari['chiusura_pm'] = substr($row['chiusura'], 0, 5);
+                }
+            }
         }
     } catch (Exception $e) {
         $error = 'Errore nel caricamento del negozio: ' . $e->getMessage();
@@ -252,12 +273,11 @@ try {
         <div class="row mb-4">
             <div class="col">
                 <h2>Gestione Negozi</h2>
-                <p class="text-muted">Visualizza e gestisci i negozi della catena</p>
             </div>
             <div class="col-auto">
             <?php if ($action !== 'new'): ?>
                 <a href="?action=new" class="btn btn-primary">
-                    <i class="bi bi-shop"></i> Nuovo Negozio
+                    <i class="bi bi-plus"></i> Nuovo Negozio
                 </a>
             <?php endif; ?>
             </div>
@@ -314,6 +334,48 @@ try {
                                     <input type="text" class="form-control" id="responsabile" name="responsabile"
                                            value="<?= htmlspecialchars($_POST['responsabile'] ?? $negozio['responsabile'] ?? '') ?>" required>
                                 </div>
+                                <!-- Orari Apertura -->
+                                <h6 class="mt-4 mb-3"><i class="bi bi-clock"></i> Orari di Apertura - da Lunedì a Venerdì</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-header bg-light">Mattina</div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-6">
+                                                        <label for="orario_apertura_am" class="form-label">Apertura</label>
+                                                        <input type="time" class="form-control" id="orario_apertura_am" name="orario_apertura_am"
+                                                               value="<?= htmlspecialchars($_POST['orario_apertura_am'] ?? $orari['apertura_am'] ?? '09:30') ?>">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label for="orario_chiusura_am" class="form-label">Chiusura</label>
+                                                        <input type="time" class="form-control" id="orario_chiusura_am" name="orario_chiusura_am"
+                                                               value="<?= htmlspecialchars($_POST['orario_chiusura_am'] ?? $orari['chiusura_am'] ?? '13:00') ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-header bg-light">Pomeriggio</div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-6">
+                                                        <label for="orario_apertura_pm" class="form-label">Apertura</label>
+                                                        <input type="time" class="form-control" id="orario_apertura_pm" name="orario_apertura_pm"
+                                                               value="<?= htmlspecialchars($_POST['orario_apertura_pm'] ?? $orari['apertura_pm'] ?? '15:30') ?>">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label for="orario_chiusura_pm" class="form-label">Chiusura</label>
+                                                        <input type="time" class="form-control" id="orario_chiusura_pm" name="orario_chiusura_pm"
+                                                               value="<?= htmlspecialchars($_POST['orario_chiusura_pm'] ?? $orari['chiusura_pm'] ?? '19:30') ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <!-- Bottoni per Invio Dati-->
                                 <div class="d-flex gap-2">
                                     <button type="submit" class="btn btn-success">            
@@ -354,6 +416,7 @@ try {
                                         <th>Indirizzo</th>
                                         <th>Responsabile</th>
                                         <th>Tessere Associate</th>
+                                        <th>Listino</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -383,20 +446,22 @@ try {
                                                     $tessere_count = 0;
                                                 }
                                                 ?>
-                                                <button type="button" class="btn btn-outline-info"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#modalTessere">
+                                                <a href="tessere_negozio.php?id=<?= $negozio['id_negozio'] ?>" class="btn btn-outline-info">
                                                     <?= $tessere_count ?>
-                                                </button>
+                                                </a>
                                             </td>
+                                            <td>
+                                                <a href="listino_negozio.php?id=<?= $negozio['id_negozio'] ?>" class="btn btn-outline-secondary">
+                                                    <i class="bi bi-box-seam"></i> Listino
+                                                </a>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                     <button class="btn btn-outline-primary" title="Modifica" 
-                                                            onclick="modificaCliente(<?= $cliente['id'] ?>)">
+                                                            onclick="modificaNegozio(<?= $negozio['id_negozio'] ?>)">
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
                                                     <button class="btn btn-outline-danger" title="Elimina" 
-                                                            onclick="eliminaCliente(<?= $cliente['id'] ?>, '<?= htmlspecialchars($cliente['nome'] . ' ' . $cliente['cognome']) ?>')">
+                                                            onclick="eliminaNegozio(<?= $negozio['id_negozio'] ?>, '<?= htmlspecialchars($negozio['nome_negozio']) ?>')">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </div>
@@ -435,61 +500,6 @@ try {
             }
         }
     </script>
-
-    <!-- Modal Tessere Emesse da Negozio -->
-    <div class="modal fade" id="modalTessere" tabindex="-1" aria-labelledby="modalTessereLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header bg-info text-white">
-                    <h5 class="modal-title" id="modalTessereLabel">
-                        <i class="bi bi-credit-card"></i> Tessere Emesse
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Contenuto View -->
-                    <div class=table-responsive>
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID Cliente</th>
-                                    <th>Nome</th>
-                                    <th>Cognome</th>
-                                    <th>ID Tessera</th>
-                                    <th>Punti Accumulati</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Dati caricati dinamicamente via AJAX o PHP -->
-                                <?php
-
-                                    try {
-                                        $db = getDB();
-                                        $stmt = $db->query("SELECT * FROM p_tessere_negozio(?)", [$negozio['id_negozio']]);
-                                        $tessere[] = $stmt->fetch();
-                                    } catch (Exception $e) {
-                                        $tessere_count = 0;
-                                    }
-                                ?>
-                                <?php foreach ($tessere as $tessera): ?>
-                                    <tr>
-                                        <td><?= $tessera['id'] ?></td>
-                                        <td><?= $tessera['nome'] ?></td>
-                                        <td><?= $tessera['cognome'] ?></td>
-                                        <td><?= $tessera['numero_tessera'] ?></td>
-                                        <td><?= $tessera['saldo_punti'] ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                <!-- Altri record -->
-                            </tbody>
-                        </table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
 </body>
 </html>

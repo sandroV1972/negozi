@@ -182,7 +182,8 @@ class Database {
             'DROP',
             'BEGIN',
             'COMMIT',
-            'ROLLBACK'
+            'ROLLBACK',
+            'CALL'
         ];
 
         if (!in_array($firstTokenUpper, $allowedCommands, true)) {
