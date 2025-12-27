@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
 
             // Elimina cliente (la view non supporta DELETE, usiamo le tabelle base)
-            $db->query("DELETE FROM negozi.clienti WHERE id = ?", [$id_cliente]);
+            $db->query("DELETE FROM negozi.clienti WHERE id_cliente = ?", [$id_cliente]);
 
             // Redirect per evitare re-submit e pulire $_POST
             $_SESSION['message'] = "Cliente eliminato correttamente.";
@@ -159,7 +159,7 @@ if ($action === 'modifica' && isset($_GET['id'])) {
     }
 }
 
-// Carica lista clienti dalla view (oppure query diretta se la view non esiste)
+// Carica lista clienti 
 try {
     $db = getDB();
 
@@ -169,8 +169,7 @@ try {
                                COALESCE(t.saldo_punti, 0) as saldo_punti
                         FROM negozi.clienti c
                         JOIN auth.utenti u ON c.utente = u.id_utente
-                        LEFT JOIN negozi.cliente_tessera ct ON c.id_cliente = ct.cliente
-                        LEFT JOIN negozi.tessere t ON ct.tessera = t.id_tessera
+                        LEFT JOIN negozi.tessere t ON c.tessera = t.id_tessera
                         ORDER BY c.id_cliente");
     $clienti = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -207,7 +206,7 @@ try {
                             <i class="bi bi-key"></i> Cambia password
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="logout.php">
+                        <li><a class="dropdown-item" href="../logout.php">
                             <i class="bi bi-box-arrow-right"></i> Logout
                         </a></li>
                     </ul>

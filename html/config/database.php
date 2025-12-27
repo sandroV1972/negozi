@@ -222,7 +222,7 @@ class Database {
     /**
      * Ottiene l'ultimo ID inserito dalla sequenza specificata.
      *
-     * @param string $sequenceName Nome della sequenza PostgreSQL (es. 'negozi.negozio_id_negozio_seq')
+     * @param string $sequenceName Nome della sequenza PostgreSQL (es. 'negozi.negozi_id_negozio_seq')
      * @return int L'ultimo valore della sequenza
      * @throws Exception Se la query fallisce
      */

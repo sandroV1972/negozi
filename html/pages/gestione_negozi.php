@@ -21,7 +21,7 @@ unset($_SESSION['message']); // Rimuovi dopo averlo letto
 $error = '';
 $action = $_GET['action'] ?? '';
 
-// Gestione azioni POST gestione_clienti.php?action=create update o delete
+// Gestione azioni POST gestione_negozi.php?action=create update o delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // Verifica CSRF token
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
@@ -55,8 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $db->query("BEGIN");
 
             try {
-                // 1. Aggiorna nome negozio in negozi.negozio
-                $db->query("UPDATE negozi.negozio SET nome_negozio = ?, indirizzo = ?, responsabile = ?
+                // 1. Aggiorna nome negozio in negozi.negozi
+                $db->query("UPDATE negozi.negozi SET nome_negozio = ?, indirizzo = ?, responsabile = ?
                             WHERE id_negozio =  ?;",
                             [$nome_negozio, $indirizzo, $responsabile, $id_negozio]);
 
@@ -100,11 +100,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $db->query("BEGIN");
 
             try {
-                // 1. Crea negozio in negozi.negozio
-                $db->query("INSERT INTO negozi.negozio (nome_negozio, indirizzo, responsabile) VALUES (?, ?, ?)",
+                // 1. Crea negozio in negozi.negozi
+                $db->query("INSERT INTO negozi.negozi (nome_negozio, indirizzo, responsabile) VALUES (?, ?, ?)",
                     [$nome_negozio, $indirizzo, $responsabile]);
 
-                $id_negozio = $db->lastInsertId('negozi.negozio_id_negozio_seq');
+                $id_negozio = $db->lastInsertId('negozi.negozi_id_negozio_seq');
 
                 // 2. Crea orari di default per il negozio in negozi.orari
                 for ($dow = 1; $dow < 6; $dow++) {
@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $db->query("DELETE FROM negozi.orari WHERE negozio = ?", [$id_negozio]);
 
                 // 2. Elimina negozio
-                $db->query("DELETE FROM negozi.negozio WHERE id_negozio = ?", [$id_negozio]);
+                $db->query("DELETE FROM negozi.negozi WHERE id_negozio = ?", [$id_negozio]);
 
                 // Conferma transazione
                 $db->query("COMMIT");
@@ -178,7 +178,7 @@ if ($action === 'modifica' && isset($_GET['id'])) {
     try {
         $db = getDB();
         $stmt = $db->query("SELECT n.id_negozio, n.nome_negozio, n.indirizzo, n.responsabile
-                            FROM negozi.negozio n
+                            FROM negozi.negozi n
                             WHERE n.id_negozio = ?", [$id_negozio]);
         $negozio = $stmt->fetch();
 
@@ -214,7 +214,7 @@ try {
 
         // Query diretta negozi con orari
         $stmt = $db->query("SELECT n.id_negozio, n.nome_negozio, n.indirizzo, n.responsabile
-                            FROM negozi.negozio n
+                            FROM negozi.negozi n
                             ORDER BY n.id_negozio ASC;");
         $negozi = $stmt->fetchAll();
     }
@@ -252,7 +252,7 @@ try {
                             <i class="bi bi-key"></i> Cambia password
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="logout.php">
+                        <li><a class="dropdown-item" href="../logout.php">
                             <i class="bi bi-box-arrow-right"></i> Logout
                         </a></li>
                     </ul>

@@ -32,7 +32,7 @@ if ($id_negozio <= 0) {
         $db = getDB();
 
         // Recupera info negozio
-        $stmt = $db->query("SELECT id_negozio, nome_negozio, indirizzo FROM negozi.negozio WHERE id_negozio = ?", [$id_negozio]);
+        $stmt = $db->query("SELECT id_negozio, nome_negozio, indirizzo FROM negozi.negozi WHERE id_negozio = ?", [$id_negozio]);
         $negozio = $stmt->fetch();
 
         if (!$negozio) {

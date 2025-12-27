@@ -192,13 +192,14 @@ require_once '../config/database.php';
     <div class="modal fade" id="modalClientiTop" tabindex="-1" aria-labelledby="modalClientiTopLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header bg-info text-white">
+                <div class="modal-header">
                     <h5 class="modal-title" id="modalClientiTopLabel">
-                        <i class="bi bi-star"></i> Clienti con 300+ punti
+                        Clienti con +300 punti
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="modalClientiTopBody">
+                    
                     <!-- Contenuto caricato via fetch -->
                     <div class="text-center py-5">
                         <div class="spinner-border text-info" role="status">
@@ -226,6 +227,7 @@ require_once '../config/database.php';
                 </div>
                 <div class="modal-body">
                     <!-- Contenuto View -->
+                     Contenuto da implementare
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
@@ -261,10 +263,10 @@ require_once '../config/database.php';
                                 <table class="table table-striped">
                                     <thead>
                                         <tr>
-                                            <th>ID</th>
-                                            <th>Nome</th>
-                                            <th>Email</th>
+                                            <th>Nome Cognome</th>
                                             <th>Punti</th>
+                                            <th>Negozio</th>
+                                            <th>Data emissione</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -272,11 +274,12 @@ require_once '../config/database.php';
                         data.data.forEach(cliente => {
                             html += `
                                 <tr>
-                                    <td>${cliente.id_cliente}</td>
                                     <td>${cliente.nome} ${cliente.cognome || ''}</td>
-                                    <td>${cliente.email}</td>
-                                    <td><span class="badge bg-success">${cliente.saldo_punti} pt</span></td>
+                                    <td><span class="badge bg-success">${cliente.saldo_punti} punti</span></td>
+                                    <td>${cliente.nome_negozio || '-'}</td>
+                                    <td>${cliente.data_richiesta ? new Date(cliente.data_richiesta).toLocaleDateString() : '-'}</td>
                                 </tr>
+
                             `;
                         });
                         html += `
@@ -296,7 +299,7 @@ require_once '../config/database.php';
                     } else {
                         body.innerHTML = `
                             <div class="alert alert-danger">
-                                <i class="bi bi-exclamation-triangle"></i> Errore: ${data.error || 'Errore sconosciuto'}
+                                <i class="bi bi-exclamation-triangle"></i> Attenzione: ${data.error || 'Errore sconosciuto'}
                             </div>
                         `;
                     }

@@ -5,7 +5,6 @@
 BEGIN;
 
 -- Pulisci dati esistenti (l'ordine è importante per le foreign key!)
-TRUNCATE TABLE negozi.cliente_tessera CASCADE;
 TRUNCATE TABLE negozi.tessere CASCADE;
 TRUNCATE TABLE negozi.listino_negozio CASCADE;
 TRUNCATE TABLE negozi.magazzino_fornitore CASCADE;
@@ -15,7 +14,7 @@ TRUNCATE TABLE negozi.ordini_fornitori CASCADE;
 TRUNCATE TABLE negozi.prodotti CASCADE;
 TRUNCATE TABLE negozi.fornitori CASCADE;
 TRUNCATE TABLE negozi.orari CASCADE;
-TRUNCATE TABLE negozi.negozio CASCADE;
+TRUNCATE TABLE negozi.negozi CASCADE;
 TRUNCATE TABLE negozi.clienti CASCADE;
 TRUNCATE TABLE auth.utente_ruolo CASCADE;
 TRUNCATE TABLE auth.utenti CASCADE;
@@ -23,7 +22,7 @@ TRUNCATE TABLE auth.ruolo CASCADE;
 
 -- Reset sequences per garantire che gli ID partano da 1
 ALTER SEQUENCE negozi.prodotti_id_prodotto_seq RESTART WITH 1;
-ALTER SEQUENCE negozi.negozio_id_negozio_seq RESTART WITH 1;
+ALTER SEQUENCE negozi.negozi_id_negozio_seq RESTART WITH 1;
 ALTER SEQUENCE negozi.clienti_id_cliente_seq RESTART WITH 1;
 ALTER SEQUENCE negozi.tessere_id_tessera_seq RESTART WITH 1;
 ALTER SEQUENCE auth.utenti_id_utente_seq RESTART WITH 1;
@@ -46,23 +45,23 @@ FROM auth.utenti u, auth.ruolo r
 WHERE u.email = 'manager@retrogaming.it' AND r.nome = 'manager'
 ON CONFLICT DO NOTHING;
 
--- CLIENTI (password: retro1980)
+-- CLIENTI (password: password123)
 INSERT INTO auth.utenti (email, password, attivo) VALUES
-  ('mario.rossi@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('laura.bianchi@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('paolo.verdi@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('anna.neri@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('luca.ferrari@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('giulia.russo@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('marco.colombo@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('sara.ricci@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('andrea.bruno@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('elena.gallo@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('fabio.conti@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('chiara.romano@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('roberto.moretti@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('valentina.fontana@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE),
-  ('davide.greco@email.it', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE)
+  ('mario.rossi@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('laura.bianchi@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('paolo.verdi@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('anna.neri@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('luca.ferrari@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('giulia.russo@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('marco.colombo@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('sara.ricci@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('andrea.bruno@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('elena.gallo@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('fabio.conti@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('chiara.romano@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('roberto.moretti@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('valentina.fontana@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ('davide.greco@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE)
 ON CONFLICT (email) DO NOTHING;
 
 -- Ruolo cliente
@@ -93,7 +92,7 @@ INSERT INTO negozi.clienti (utente, cf, nome, cognome, telefono) VALUES
 ON CONFLICT (cf) DO NOTHING;
 
 -- NEGOZI (5 città)
-INSERT INTO negozi.negozio (nome_negozio, responsabile, indirizzo) VALUES
+INSERT INTO negozi.negozi (nome_negozio, responsabile, indirizzo) VALUES
   ('Retro Gaming Milano', 'Mario Plummer', 'Via Dante 42, 20121 Milano'),
   ('Retro Gaming Roma', 'Luigi Plummer', 'Corso Vittorio Emanuele 156, 00186 Roma'),
   ('Retro Gaming Torino', 'Bruno Frank', 'Via Garibaldi 88, 10122 Torino'),
@@ -102,20 +101,20 @@ INSERT INTO negozi.negozio (nome_negozio, responsabile, indirizzo) VALUES
 -- ORARI: Lun-Sab 9:30-13:00 (mattina, iod=1)
 INSERT INTO negozi.orari (negozio, dow, iod, apertura, chiusura)
 SELECT n.id_negozio, g, 1, '09:30:00', '13:00:00'
-FROM negozi.negozio n CROSS JOIN generate_series(1, 6) g;
+FROM negozi.negozi n CROSS JOIN generate_series(1, 6) g;
 
 -- ORARI: Lun-Sab 15:30-19:30 (pomeriggio, iod=2)
 INSERT INTO negozi.orari (negozio, dow, iod, apertura, chiusura)
 SELECT n.id_negozio, g, 2, '15:30:00', '19:30:00'
-FROM negozi.negozio n CROSS JOIN generate_series(1, 6) g;
+FROM negozi.negozi n CROSS JOIN generate_series(1, 6) g;
 
 -- ORARI: Domenica 10:00-13:00 (mattina, iod=1)
 INSERT INTO negozi.orari (negozio, dow, iod, apertura, chiusura)
-SELECT n.id_negozio, 7, 1, '10:00:00', '13:00:00' FROM negozi.negozio n;
+SELECT n.id_negozio, 7, 1, '10:00:00', '13:00:00' FROM negozi.negozi n;
 
 -- ORARI: Domenica 16:00-19:00 (pomeriggio, iod=2)
 INSERT INTO negozi.orari (negozio, dow, iod, apertura, chiusura)
-SELECT n.id_negozio, 7, 2, '16:00:00', '19:00:00' FROM negozi.negozio n;
+SELECT n.id_negozio, 7, 2, '16:00:00', '19:00:00' FROM negozi.negozi n;
 
 -- FORNITORI
 INSERT INTO negozi.fornitori (piva, nome_fornitore, indirizzo, email, telefono, attivo) VALUES
@@ -275,17 +274,18 @@ SELECT
   (RANDOM() * 500)::INTEGER
 FROM generate_series(1, 15);
 
--- ASSOCIA TESSERE AI CLIENTI (una tessera per cliente)
-INSERT INTO negozi.cliente_tessera (cliente, tessera)
-SELECT c.id_cliente, t.id_tessera
+-- ASSOCIA TESSERE AI CLIENTI (aggiorna campo tessera in clienti)
+UPDATE negozi.clienti c
+SET tessera = t.id_tessera
 FROM (
   SELECT id_cliente, ROW_NUMBER() OVER (ORDER BY id_cliente) as rn
   FROM negozi.clienti
-) c
+) c2
 JOIN (
   SELECT id_tessera, ROW_NUMBER() OVER (ORDER BY id_tessera) as rn
   FROM negozi.tessere
-) t ON c.rn = t.rn;
+) t ON c2.rn = t.rn
+WHERE c.id_cliente = c2.id_cliente;
 
 COMMIT;
 
@@ -294,12 +294,11 @@ SELECT '=== DATABASE POPOLATO ===' as info;
 SELECT 'Ruoli:' as tipo, COUNT(*) as totale FROM auth.ruolo
 UNION ALL SELECT 'Utenti:', COUNT(*) FROM auth.utenti
 UNION ALL SELECT 'Clienti:', COUNT(*) FROM negozi.clienti
-UNION ALL SELECT 'Negozi:', COUNT(*) FROM negozi.negozio
+UNION ALL SELECT 'Negozi:', COUNT(*) FROM negozi.negozi
 UNION ALL SELECT 'Fornitori:', COUNT(*) FROM negozi.fornitori
 UNION ALL SELECT 'Prodotti:', COUNT(*) FROM negozi.prodotti
 UNION ALL SELECT 'Magazzino:', COUNT(*) FROM negozi.magazzino_fornitore
 UNION ALL SELECT 'Listino:', COUNT(*) FROM negozi.listino_negozio
-UNION ALL SELECT 'Tessere:', COUNT(*) FROM negozi.tessere
-UNION ALL SELECT 'Clienti tessera:', COUNT(*) FROM negozi.cliente_tessera;
+UNION ALL SELECT 'Tessere:', COUNT(*) FROM negozi.tessere;
 
 SELECT 'ACCESSO: manager@retrogaming.it / retro1980' as credenziali;
