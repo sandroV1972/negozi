@@ -417,6 +417,7 @@ try {
                                         <th>Responsabile</th>
                                         <th>Tessere Associate</th>
                                         <th>Listino</th>
+                                        <th>Ordini</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -454,6 +455,24 @@ try {
                                                 <a href="listino_negozio.php?id=<?= $negozio['id_negozio'] ?>" class="btn btn-outline-secondary">
                                                     <i class="bi bi-box-seam"></i> Listino
                                                 </a>
+                                            </td>
+                                            <td>
+                                                <?php
+                                                // Conta ordini in atto per il negozio
+                                                try {
+                                                    $db = getDB();
+                                                    $stmt = $db->query("SELECT COUNT(*) AS count FROM negozi.ordini_fornitori WHERE negozio = ?
+                                                        AND stato_ordine = 'emesso'", [$negozio['id_negozio']]);
+                                                    $countResult = $stmt->fetch();
+                                                    $ordini_count = $countResult ? (int)$countResult['count'] : 0;
+                                                } catch (Exception $e) {
+                                                    $ordini_count = 0;
+                                                }
+                                                ?>
+                                                <a href="javascript:void(0)" onClick="listaOrdiniModal(<?= $negozio['id_negozio'] ?>)" style="cursor:pointer" class="btn btn-outline-info">
+                                                    <?= $ordini_count ?>
+                                                </a>
+                                            </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                     <button class="btn btn-outline-primary" title="Modifica" 
@@ -477,9 +496,53 @@ try {
         <?php endif; ?>
     </div>
 
+    <!-- Modal Lista Ordini -->
+    <div class="modal fade" id="listaOrdiniModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="bi bi-truck"></i> Ordini in Attesa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="listaOrdiniBody">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">Caricamento...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="hidden" id="id_negozio" value="">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
+        function listaOrdiniModal(id_negozio) {
+            document.getElementById('id_negozio').value = id_negozio;
+            if (id_negozio === 0) {
+                return;
+            } else {
+                // Carica lista ordini via fetch API
+                fetch('api/ordini_negozio.php?id_negozio=' + id_negozio)
+                    .then(response => response.text())
+                    .then(data => {
+                        document.getElementById('listaOrdiniBody').innerHTML = data;
+                    })
+                    .catch(error => {
+                        document.getElementById('listaOrdiniBody').innerHTML = '<div class="alert alert-danger">Errore nel caricamento degli ordini.</div>';
+                    });
+            }
+            if (!document.getElementById('listaOrdiniModal').classList.contains('show')) {
+                var listaOrdiniModal = new bootstrap.Modal(document.getElementById('listaOrdiniModal'));
+                listaOrdiniModal.show();
+            }
+
+        }
         function modificaNegozio(id) {
         
             window.location.href = 'gestione_negozi.php?action=modifica&id=' + id;
@@ -497,6 +560,33 @@ try {
                 `;
                 document.body.appendChild(form);
                 form.submit();
+            }
+        }
+
+        function aggiornaStatoOrdine(id_ordine, nuovo_stato) {
+            const conferma = nuovo_stato === 'consegnato'
+                ? 'Confermi che l\'ordine è arrivato?'
+                : 'Sei sicuro di voler annullare questo ordine?';
+
+            if (confirm(conferma)) {
+                const id_negozio = document.getElementById('id_negozio').value;
+                const formData = new FormData();
+                formData.append('action', nuovo_stato);
+                formData.append('id_ordine', id_ordine);
+
+                fetch('api/ordini_negozio.php?id_negozio=' + id_negozio, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(data => {
+                    // Ricarica la pagina per aggiornare il conteggio ordini
+                    window.location.reload();
+                })
+                .catch(error => {
+                    console.error('Errore fetch:', error);
+                    alert('Errore nell\'aggiornamento dello stato');
+                });
             }
         }
     </script>

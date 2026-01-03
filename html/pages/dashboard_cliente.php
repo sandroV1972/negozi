@@ -27,6 +27,10 @@ $id_cliente = null;
 $id_tessera = null;
 $punti_disponibili = 0;
 
+// variabile globale $max_sconto per calcolare lo sconto massimo applicabile in fase di checkout
+// in questo caso 100 euro, se applicando lo sconto si supera tale valore, lo sconto viene limitato a 100 euro
+$max_sconto = 100;
+
 try {
     $db = getDB();
     $stmt = $db->query("SELECT id_cliente, tessera FROM negozi.clienti WHERE utente = ?", [$_SESSION['user_id']]);
@@ -42,6 +46,17 @@ try {
             $punti_disponibili = $tessera ? (int)$tessera['saldo_punti'] : 0;
         }
     }
+} catch (Exception $e) {
+    $error = $e->getMessage();
+}
+
+// Livelli sconto
+$sconti_livelli = [];
+try {
+    $db = getDB();
+    $stmt = $db->query("SELECT sconto_percentuale, punti_richiesti 
+        FROM negozi.livelli_sconto ORDER BY sconto_percentuale ASC;");
+    $sconti_livelli = $stmt->fetchAll();
 } catch (Exception $e) {
     $error = $e->getMessage();
 }
@@ -145,15 +160,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $db = getDB();
             $db->query("BEGIN");
 
-            $punti_guadagnati = 0;
+            // Mappa sconto_percentuale -> punti da scalare ricava i valori dalla tabella livelli_sconto
 
-            // Verifica disponibilità e crea fattura
+            $sconto_percentuale = (int)($_POST['sconto_percentuale'] ?? 0);
+            $punti_sconto = 0;
+            if ($sconto_percentuale == 5) $punti_sconto = 100;
+            elseif ($sconto_percentuale == 15) $punti_sconto = 200;
+            elseif ($sconto_percentuale == 30) $punti_sconto = 300;
 
-            $totale_fattura = 0;
-            $dettagli_fattura = [];
-
+            // Verifica disponibilità prodotti
             foreach ($carrello as $item) {
-                // Verifica disponibilità attuale
                 $stmt = $db->query("SELECT magazzino FROM negozi.listino_negozio
                                         WHERE negozio = ? AND prodotto = ? FOR UPDATE",
                                         [$item['negozio_id'], $item['prodotto_id']]);
@@ -163,54 +179,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     throw new RuntimeException("Disponibilità insufficiente per " . $item['nome_prodotto'] .
                         " presso " . $item['nome_negozio'] . " (disponibili: " . ($stock['magazzino'] ?? 0) . ")");
                 }
-
-                $subtotale = $item['prezzo'] * $item['quantita'];
-
-                $dettagli_fattura[] = [
-                        'prodotto_id' => $item['prodotto_id'],
-                        'nome_prodotto' => $item['nome_prodotto'],
-                        'quantita' => $item['quantita'],
-                        'prezzo' => $item['prezzo'],
-                        'subtotale' => $subtotale
-                ];
-                $totale_fattura += $subtotale;
             }
 
-            // Crea fattura per questo negozio
-            $stmt = $db->query("INSERT INTO negozi.fatture (cliente, totale_pagato)
-                                VALUES (?, ?) RETURNING id_fattura",
-                                [$id_cliente, $totale_fattura]);
+            // Crea fattura 
+            $stmt = $db->query("INSERT INTO negozi.fatture (cliente, data_fattura, sconto_percentuale)
+                                VALUES (?, ?, ?) RETURNING id_fattura",
+                                [$id_cliente, date('Y-m-d'), $sconto_percentuale]);
             $fattura = $stmt->fetch();
             $id_fattura = $fattura['id_fattura'];
 
-            // Inserisci dettagli e aggiorna magazzino con la nuova quantità
-            foreach ($dettagli_fattura as $det) {
+            // Inserisci dettagli e aggiorna magazzino
+            foreach ($carrello as $item) {
                 $db->query("INSERT INTO negozi.dettagli_fattura (fattura, prodotto, quantita, prezzo_unita)
                                 VALUES (?, ?, ?, ?)",
-                                [$id_fattura, $det['prodotto_id'], $det['quantita'], $det['prezzo']]);
+                                [$id_fattura, $item['prodotto_id'], $item['quantita'], $item['prezzo']]);
 
-                    $db->query("UPDATE negozi.listino_negozio SET magazzino = magazzino - ?
-                                WHERE negozio = ? AND prodotto = ?",
-                                [$det['quantita'], $negozio_id, $det['prodotto_id']]);
-            }
-            
-
-            // Calcola e aggiorna punti: un punto ogni euro speso
-            $punti_guadagnati = (int)($totale_generale);
-            if ($id_tessera && $punti_guadagnati > 0) {
-                $db->query("UPDATE negozi.tessere SET saldo_punti = saldo_punti + ? WHERE id_tessera = ?",
-                            [$punti_guadagnati, $id_tessera]);
+                $db->query("UPDATE negozi.listino_negozio SET magazzino = magazzino - ?
+                            WHERE negozio = ? AND prodotto = ?",
+                            [$item['quantita'], $item['negozio_id'], $item['prodotto_id']]);
+                
+                // Aggiorna punti tessera se sconto applicato
+                if ($sconto_percentuale > 0 && $id_tessera) {
+                    $db->query("CALL negozi.aggiorna_punti_tessera(?, ?)", [$id_tessera, $sconto_percentuale]);
+                }
+                // Aggiorna totale fattura pagata da totale dettagli meno sconto
+                $db->query("CALL negozi.aggiorna_totale_fattura(?)", [$id_fattura]);
             }
 
             $db->query("COMMIT");
 
-            // Salva dati conferma in sessione
-            $_SESSION['conferma_acquisto'] = [
-                'fattura' => $id_fattura,
-                'totale_fattura' => $totale_fattura,
-                'punti_guadagnati' => $punti_guadagnati,
-                'punti_totali' => $punti_disponibili + $punti_guadagnati
-            ];
+            // Passa solo l'id_fattura, la pagina di conferma rileggerà i dati dal DB
+            $_SESSION['conferma_acquisto'] = $id_fattura;
 
             // Svuota carrello
             $_SESSION['carrello'] = [];
@@ -286,8 +285,8 @@ foreach ($_SESSION['carrello'] as $item) {
                         <?= htmlspecialchars($_SESSION['user_nome']) ?>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="cambia_password.php">
-                            <i class="bi bi-key"></i> Cambia password
+                        <li><a class="dropdown-item" href="profilo_cliente.php">
+                            <i class="bi bi-person"></i> Il mio profilo
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="../logout.php">
@@ -343,11 +342,29 @@ foreach ($_SESSION['carrello'] as $item) {
                     <strong><?= number_format($totale_carrello, 2) ?></strong>
                 </div>
                 <div class="small text-muted mb-3">
-                    Punti che guadagnerai: <strong><?= (int)($totale_carrello / 10) ?></strong>
+                    Punti che guadagnerai: <strong><?= (int)($totale_carrello) ?></strong>
                 </div>
-
+                
+                <div class="small text-muted mb-3">
+                    Seleziona lo sconto da applicare (max 100€):
+                </div>
                 <form method="POST" class="d-grid gap-2">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                    <div class="mb-3">
+                        <select name="sconto_percentuale" class="form-select form-select-sm">
+                            <option value="0" data-punti="0">Nessuno sconto</option>
+                            <?php // Mostra opzioni sconto in base ai punti disponibili e al totale carrello
+                                  // ricava i valori dalla tabella livelli_sconto per ogni riga della tabella
+                                  //aggiunge le opzioni solo se il cliente ha i punti necessari e lo sconto non supera i 100€
+                                foreach ($sconti_livelli as $livello): ?>
+                                    <?php if ($punti_disponibili >= $livello['punti_richiesti']): ?>
+                                        <option value=<?= htmlspecialchars($livello['sconto_percentuale']) ?> data-punti="<?= htmlspecialchars($livello['punti_richiesti']) ?>"><?= htmlspecialchars($livello['punti_richiesti']) ?> punti -
+                                            <?php echo ($totale_carrello * $livello['sconto_percentuale'] / 100 > $max_sconto) ? $max_sconto . "€ di sconto" : number_format($totale_carrello * $livello['sconto_percentuale'] / 100, 2) . "€ di sconto"; ?>
+                                        </option>
+                                    <?php endif; ?>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                     <button type="submit" name="action" value="checkout" class="btn btn-success">
                         <i class="bi bi-bag-check"></i> Acquista tutto
                     </button>

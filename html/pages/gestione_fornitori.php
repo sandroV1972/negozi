@@ -33,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $indirizzo = trim($_POST['indirizzo'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $telefono = trim($_POST['telefono'] ?? '');
-    $attivo = isset($_POST['attivo']) ? true : false;
 
     try {
         $db = getDB();
@@ -52,9 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
             $db->query("UPDATE negozi.fornitori
                         SET piva = ?, nome_fornitore = ?, indirizzo = NULLIF(?,''),
-                            email = NULLIF(?,''), telefono = NULLIF(?,''), attivo = ?
+                            email = NULLIF(?,''), telefono = NULLIF(?,'')
                         WHERE piva = ?",
-                        [$piva, $ragione_sociale, $indirizzo, $email, $telefono, $attivo, $piva_originale]);
+                        [$piva, $ragione_sociale, $indirizzo, $email, $telefono, $piva_originale]);
 
             $_SESSION['message'] = "Fornitore modificato correttamente.";
             header('Location: gestione_fornitori.php');
@@ -72,9 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 throw new RuntimeException('La Partita IVA deve essere di 11 cifre numeriche.');
             }
 
-            $db->query("INSERT INTO negozi.fornitori (piva, nome_fornitore, indirizzo, email, telefono, attivo)
-                        VALUES (?, ?, NULLIF(?,''), NULLIF(?,''), NULLIF(?,''), ?)",
-                        [$piva, $nome_fornitore, $indirizzo, $email, $telefono, $attivo]);
+            $db->query("INSERT INTO negozi.fornitori (piva, nome_fornitore, indirizzo, email, telefono)
+                        VALUES (?, ?, NULLIF(?,''), NULLIF(?,''), NULLIF(?,''))",
+                        [$piva, $nome_fornitore, $indirizzo, $email, $telefono]);
 
             $_SESSION['message'] = "Fornitore creato correttamente.";
             header('Location: gestione_fornitori.php');
@@ -95,19 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit;
         }
 
-        // Toggle attivo/disattivo
-        if ($_POST['action'] === 'toggle_attivo') {
-            $piva_toggle = trim($_POST['piva'] ?? '');
-            if (empty($piva_toggle)) {
-                throw new RuntimeException('P.IVA fornitore non valida.');
-            }
-
-            $db->query("UPDATE negozi.fornitori SET attivo = NOT attivo WHERE piva = ?", [$piva_toggle]);
-
-            $_SESSION['message'] = "Stato fornitore aggiornato.";
-            header('Location: gestione_fornitori.php');
-            exit;
-        }
 
     } catch (Exception $e) {
         if (strpos($e->getMessage(), 'duplicate key') !== false) {
@@ -126,7 +112,7 @@ if ($action === 'modifica' && isset($_GET['piva'])) {
     $piva_edit = trim($_GET['piva']);
     try {
         $db = getDB();
-        $stmt = $db->query("SELECT piva, nome_fornitore, indirizzo, email, telefono, attivo
+        $stmt = $db->query("SELECT piva, nome_fornitore, indirizzo, email, telefono
                             FROM negozi.fornitori WHERE piva = ?", [$piva_edit]);
         $fornitore = $stmt->fetch();
 
@@ -143,12 +129,12 @@ if ($action === 'modifica' && isset($_GET['piva'])) {
 // Carica lista fornitori
 try {
     $db = getDB();
-    $stmt = $db->query("SELECT f.piva, f.nome_fornitore, f.indirizzo, f.email, f.telefono, f.attivo,
+    $stmt = $db->query("SELECT f.piva, f.nome_fornitore, f.indirizzo, f.email, f.telefono,
                                COUNT(DISTINCT mf.prodotto) as num_prodotti,
                                SUM(mf.quantita) as totale_disponibile
                         FROM negozi.fornitori f
                         LEFT JOIN negozi.magazzino_fornitore mf ON f.piva = mf.piva_fornitore
-                        GROUP BY f.piva, f.nome_fornitore, f.indirizzo, f.email, f.telefono, f.attivo
+                        GROUP BY f.piva, f.nome_fornitore, f.indirizzo, f.email, f.telefono
                         ORDER BY f.nome_fornitore ASC");
     $fornitori = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -290,16 +276,6 @@ try {
                                     </div>
                                 </div>
 
-                                <!-- Stato Attivo -->
-                                <div class="mb-3">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="attivo" name="attivo"
-                                               <?= (($_POST['attivo'] ?? $fornitore['attivo'] ?? true) == true) ? 'checked' : '' ?>>
-                                        <label class="form-check-label" for="attivo">Fornitore attivo</label>
-                                    </div>
-                                    <small class="text-muted">I fornitori disattivati non appariranno nelle opzioni di ordine.</small>
-                                </div>
-
                                 <!-- Bottoni -->
                                 <div class="d-flex gap-2">
                                     <button type="submit" class="btn btn-success">
@@ -340,13 +316,13 @@ try {
                                         <th>Contatti</th>
                                         <th class="text-center">Prodotti</th>
                                         <th class="text-center">Disponibilità</th>
-                                        <th class="text-center">Stato</th>
+                                        <th class="text-center">Ordini</th>
                                         <th class="text-center">Azioni</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($fornitori as $f): ?>
-                                        <tr class="<?= !$f['attivo'] ? 'table-secondary' : '' ?>">
+                                        <tr>
                                             <td>
                                                 <code><?= htmlspecialchars($f['piva']) ?></code>
                                             </td>
@@ -378,22 +354,16 @@ try {
                                                 <span class="badge bg-secondary"><?= (int)($f['totale_disponibile'] ?? 0) ?> pz</span>
                                             </td>
                                             <td class="text-center">
-                                                <?php if ($f['attivo']): ?>
-                                                    <span class="badge bg-success">Attivo</span>
-                                                <?php else: ?>
-                                                    <span class="badge bg-danger">Disattivato</span>
-                                                <?php endif; ?>
+                                                <button type="button" class="btn btn-sm btn-outline-success"
+                                                        onclick="mostraOrdini('<?= htmlspecialchars($f['piva']) ?>', '<?= htmlspecialchars(addslashes($f['nome_fornitore'])) ?>')">
+                                                    <i class="bi bi-box-seam"></i> Ordini
+                                                </button>
                                             </td>
                                             <td class="text-center">
                                                 <div class="btn-group btn-group-sm">
                                                     <button class="btn btn-outline-primary" title="Modifica"
                                                             onclick="modificaFornitore('<?= htmlspecialchars($f['piva']) ?>')">
                                                         <i class="bi bi-pencil"></i>
-                                                    </button>
-                                                    <button class="btn btn-outline-<?= $f['attivo'] ? 'warning' : 'success' ?>"
-                                                            title="<?= $f['attivo'] ? 'Disattiva' : 'Attiva' ?>"
-                                                            onclick="toggleFornitore('<?= htmlspecialchars($f['piva']) ?>', <?= $f['attivo'] ? 'true' : 'false' ?>)">
-                                                        <i class="bi bi-<?= $f['attivo'] ? 'pause-circle' : 'play-circle' ?>"></i>
                                                     </button>
                                                     <button class="btn btn-outline-danger" title="Elimina"
                                                             onclick="eliminaFornitore('<?= htmlspecialchars($f['piva']) ?>', '<?= htmlspecialchars(addslashes($f['nome_fornitore'])) ?>')">
@@ -413,26 +383,38 @@ try {
         <?php endif; ?>
     </div>
 
+    <!-- Modal Ordini Fornitore -->
+    <div class="modal fade" id="modalOrdini" tabindex="-1" aria-labelledby="modalOrdiniLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="modalOrdiniLabel">
+                        <i class="bi bi-box-seam"></i> Ordini Fornitore
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3"><strong>Fornitore:</strong> <span id="ordini_nome_fornitore"></span></p>
+                    <div id="ordini_container">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">Caricamento...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         function modificaFornitore(piva) {
             window.location.href = 'gestione_fornitori.php?action=modifica&piva=' + encodeURIComponent(piva);
-        }
-
-        function toggleFornitore(piva, attivo) {
-            const azione = attivo ? 'disattivare' : 'attivare';
-            if (confirm('Sei sicuro di voler ' + azione + ' questo fornitore?')) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                    <input type="hidden" name="action" value="toggle_attivo">
-                    <input type="hidden" name="piva" value="${piva}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
-            }
         }
 
         function eliminaFornitore(piva, ragioneSociale) {
@@ -447,6 +429,84 @@ try {
                 document.body.appendChild(form);
                 form.submit();
             }
+        }
+
+        function mostraOrdini(piva, nomeFornitore) {
+            document.getElementById('ordini_nome_fornitore').textContent = nomeFornitore;
+            document.getElementById('ordini_container').innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Caricamento...</span>
+                    </div>
+                </div>
+            `;
+
+            const modal = new bootstrap.Modal(document.getElementById('modalOrdini'));
+            modal.show();
+
+            // Carica ordini via AJAX
+            fetch('api/ordini_fornitore.php?piva=' + encodeURIComponent(piva))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('ordini_container').innerHTML = `
+                            <div class="alert alert-danger">${data.error}</div>
+                        `;
+                        return;
+                    }
+
+                    if (data.ordini.length === 0) {
+                        document.getElementById('ordini_container').innerHTML = `
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p class="mt-2">Nessun ordine per questo fornitore.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    let html = `
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Prodotto</th>
+                                        <th>Negozio</th>
+                                        <th>Quantità</th>
+                                        <th>Data Ordine</th>
+                                        <th>Stato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    data.ordini.forEach(ordine => {
+                        let statoBadge = 'secondary';
+                        if (ordine.stato_ordine === 'consegnato') statoBadge = 'success';
+                        else if (ordine.stato_ordine === 'emesso') statoBadge = 'warning';
+                        else if (ordine.stato_ordine === 'annullato') statoBadge = 'danger';
+
+                        html += `
+                            <tr>
+                                <td>#${ordine.id_ordine}</td>
+                                <td>${ordine.nome_prodotto || 'N/D'}</td>
+                                <td>${ordine.nome_negozio || 'N/D'}</td>
+                                <td>${ordine.quantita}</td>
+                                <td>${ordine.data_ordine}</td>
+                                <td><span class="badge bg-${statoBadge}">${ordine.stato_ordine}</span></td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table></div>';
+                    document.getElementById('ordini_container').innerHTML = html;
+                })
+                .catch(error => {
+                    document.getElementById('ordini_container').innerHTML = `
+                        <div class="alert alert-danger">Errore nel caricamento degli ordini.</div>
+                    `;
+                });
         }
     </script>
 </body>

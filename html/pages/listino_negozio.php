@@ -53,6 +53,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $negozio
     try {
         $db = getDB();
 
+
+        // Invia un Ordine al fornitore per un prodotto
+        if ($_POST['action'] === 'order') {
+            $prodotto = (int)($_POST['prodotto'] ?? 0);
+            $quantita = (int)($_POST['quantita'] ?? 0);
+
+            if ($prodotto <= 0) {
+                throw new RuntimeException('Seleziona un prodotto valido.');
+            }
+            if ($quantita <= 0) {
+                throw new RuntimeException('La quantità deve essere maggiore di zero.');
+            }
+
+            try {
+                $db->query("BEGIN");
+
+                // Trova il miglior fornitore usando la funzione del database
+                $stmt = $db->query("SELECT negozi.miglior_fornitore(?) AS piva_fornitore", [$prodotto]);
+                $result = $stmt->fetch();
+                $fornitore = $result['piva_fornitore'] ?? null;
+
+                if (empty($fornitore)) {
+                    throw new RuntimeException('Nessun fornitore disponibile per questo prodotto con la quantità richiesta.');
+                }
+
+                $db->query("INSERT INTO negozi.ordini_fornitori (negozio, prodotto, fornitore, quantita, data_ordine, data_consegna, stato_ordine)
+                            VALUES (?, ?, ?::char(11), ?, ?, ?, 'emesso')",
+                    [$id_negozio, $prodotto, $fornitore, $quantita, date('Y-m-d'), date('Y-m-d', strtotime('+7 days'))]);
+
+                // La quantità nel magazzino del fornitore viene aggiornata con funzione trigger su ordini_fornitore
+                $db->query("COMMIT");
+
+                $_SESSION['message'] = "Ordine effettuato con successo!";
+                header("Location: listino_negozio.php?id=$id_negozio");
+                exit;
+            } catch (Exception $e) {
+                $db->query("ROLLBACK");
+                throw $e;
+            }
+        }
+
         // Aggiungi prodotto al listino
         if ($_POST['action'] === 'add') {
             $prodotto = (int)($_POST['prodotto'] ?? 0);
@@ -131,25 +172,6 @@ if ($negozio) {
                             WHERE id_prodotto NOT IN (SELECT prodotto FROM negozi.listino_negozio WHERE negozio = ?)
                             ORDER BY nome_prodotto", [$id_negozio]);
         $prodotti_disponibili = $stmt->fetchAll();
-
-        // Carica fornitori per ogni prodotto nel listino (per la modal ordine)
-        $stmt = $db->query("SELECT mf.prodotto, mf.piva_fornitore, f.nome_fornitore, mf.prezzo, mf.quantita
-                            FROM negozi.magazzino_fornitore mf
-                            JOIN negozi.fornitori f ON mf.piva_fornitore = f.piva
-                            WHERE f.attivo = true AND mf.quantita > 0
-                            ORDER BY mf.prodotto, mf.prezzo ASC");
-        $fornitori_raw = $stmt->fetchAll();
-
-        // Raggruppa fornitori per prodotto
-        $fornitori_per_prodotto = [];
-        foreach ($fornitori_raw as $f) {
-            $fornitori_per_prodotto[$f['prodotto']][] = [
-                'piva' => trim($f['piva_fornitore']),
-                'nome' => $f['nome_fornitore'],
-                'prezzo' => (float)$f['prezzo'],
-                'quantita' => (int)$f['quantita']
-            ];
-        }
     } catch (Exception $e) {
         $error = 'Errore nel caricamento del listino: ' . $e->getMessage();
     }
@@ -371,16 +393,9 @@ if ($negozio) {
                         </div>
 
                         <div class="mb-3">
-                            <label for="ordine_fornitore" class="form-label">Fornitore</label>
-                            <select class="form-select" id="ordine_fornitore" name="fornitore" required>
-                                <option value="">Caricamento fornitori...</option>
-                            </select>
-                            <div class="form-text" id="info_fornitore"></div>
-                        </div>
-
-                        <div class="mb-3">
                             <label for="ordine_quantita" class="form-label">Quantità</label>
                             <input type="number" class="form-control" id="ordine_quantita" name="quantita" min="1" value="1" required>
+                            <div class="form-text">Il fornitore con il miglior prezzo verrà selezionato automaticamente.</div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -397,9 +412,6 @@ if ($negozio) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Dati fornitori per prodotto (generati da PHP)
-        const fornitoriPerProdotto = <?= json_encode($fornitori_per_prodotto ?? []) ?>;
-
         function rimuoviProdotto(prodottoId, nomeProdotto) {
             if (confirm('Sei sicuro di voler rimuovere "' + nomeProdotto + '" dal listino?')) {
                 const form = document.createElement('form');
@@ -418,35 +430,6 @@ if ($negozio) {
             document.getElementById('ordine_prodotto').value = prodottoId;
             document.getElementById('ordine_nome_prodotto').value = nomeProdotto;
             document.getElementById('ordine_quantita').value = 1;
-            document.getElementById('info_fornitore').textContent = '';
-
-            const selectFornitore = document.getElementById('ordine_fornitore');
-            const fornitori = fornitoriPerProdotto[prodottoId] || [];
-
-            if (fornitori.length === 0) {
-                selectFornitore.innerHTML = '<option value="">Nessun fornitore disponibile</option>';
-            } else {
-                let options = '<option value="">Seleziona fornitore...</option>';
-                fornitori.forEach(f => {
-                    options += `<option value="${f.piva}" data-prezzo="${f.prezzo}" data-quantita="${f.quantita}">
-                        ${f.nome} - €${f.prezzo.toFixed(2)} (disp: ${f.quantita})
-                    </option>`;
-                });
-                selectFornitore.innerHTML = options;
-            }
-
-            // Aggiorna info quando si seleziona un fornitore
-            selectFornitore.onchange = function() {
-                const selected = this.options[this.selectedIndex];
-                if (selected.value) {
-                    const prezzo = selected.dataset.prezzo;
-                    const quantita = selected.dataset.quantita;
-                    document.getElementById('info_fornitore').innerHTML =
-                        `<strong>Prezzo unitario:</strong> €${parseFloat(prezzo).toFixed(2)} | <strong>Disponibilità:</strong> ${quantita} pz`;
-                } else {
-                    document.getElementById('info_fornitore').textContent = '';
-                }
-            };
 
             const modal = new bootstrap.Modal(document.getElementById('modalOrdine'));
             modal.show();

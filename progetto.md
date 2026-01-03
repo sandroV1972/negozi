@@ -3,32 +3,30 @@
 > **Versione:** 1.0  
 > **Autore:** Alessandro Valenti 
 > **Corso:** Basi di Dati — Laboratorio - Progetto 2025
-> **Tecnologie:** PostgreSQL, PHP, HTML/CSS, Bootstrap
+> **Tecnologie:** PostgreSQL, PHP, HTML/CSS, JavaScript, Bootstrap
 
 ---
 
 ## Introduzione
-Obiettivo: sviluppare un’applicazione per la gestione di una catena di negozi, con funzionalità per clienti e manager.
-
----
+Obiettivo: sviluppare un’applicazione per la gestione di una catena di negozi, con funzionalità per clienti e manager. I clienti possono accedere tramite login al negozio online che presenta la lista dei prodotti che possono essee acquistati scegliendo per ogni prodotto da quale negozio acquistare e la quantità. Allo stesso modo i/il manager accede tramite login e accede a una dashboard di gestione: negozi, clienti, prodotti, fornitori.
 
 # Analisi dei requisiti
 
 ## 1. Scopo e contesto
-Realizzare un’applicazione per la gestione di una **catena di negozi**, con funzionalità per **clienti** e **manager**: i clienti consultano i prodotti, li acquistano e possono applicare sconti su fattura; i manager gestiscono anagrafiche e processi (prodotti, prezzi per negozio, negozi, clienti, fornitori, ordini ai fornitori, carte fedeltà).
+Realizzare un’applicazione per la gestione di una **catena di negozi**, con funzionalità per **clienti** e **manager**: i clienti consultano i prodotti, li acquistano e possono applicare sconti su fattura grazie ai punti accumulati nella tesera fedeltà; le tessere sono rilasciate dai negozi ma sono valide per acquisti nel sito e quindi in tutti i negozi; i manager gestiscono anagrafiche e processi (prodotti, prezzi per negozio, negozi, clieti, fornitori, ordini ai fornitori, carte fedeltà).
 
 ## 2. Stakeholder e attori
 
 ### Attori primari:
-- **Cliente** (utente finale): si registra e accede con credenziali, visualizza prodotti, effettua acquisti, può applicare uno sconto disponibile e vedere il saldo punti della propria tessera. Può modificare i propri dati, cambiare password o elminare il proprio account.
-- **Manager** (gestore catena): accede con credenziali (viene registrato dall'amministratore), può cambiare password; crea e gestisce utenze clienti; inserisce e gestisce i prodotti (con prezzi differenziati per negozio), negozi, clienti, fornitori; inserisce ordini ai fornitori per rifornimenti a uno specifico negozio.
+- **Cliente** (utente finale): i clienti (dati utente e dati personali) sono aggiunti dal mananager. Il clinete quindi accede con credenziali iniziali, la username corrisponde alla email e una password default. Il cliente puo cambiare la password in qualsiasi momento, una volta entrato nel sito con le credenziali visualizza prodotti, effettua acquisti, può applicare uno sconto disponibile a seconda dei punti accumulati per un massimo di 100euro, e vedere il saldo punti della propria tessera. Solo il manager puo eliminare il cliente.
+- **Manager** (gestore catena): accede con credenziali (il sistema nasce con le credenziali di amministratore), può cambiare password; crea e gestisce utenze clienti; inserisce e gestisce i prodotti (con prezzi differenziati per negozio), gestisce i negozi, i fornitori; inserisce ordini ai fornitori tramite il magazzino negozio per rifornimenti a uno specifico negozio per uno specifico prodotto. L'ordine viene indirizzato automaticamente al negozio che per quel prodotto garantisce il prezzo migliore.
 
 ### Stackholders:
-- **Negozi** ogni punto vendità è una entità autonoma nella catena, ogni negozio ha un responsabile, orari di apertura (gestiti separatamente) e indirizzo. E' il negozio che rilascia la tessera fedeltà al cliente. 
-- **Società** è la società proprietaria dei negozi gestisce tutti i punti vendita tramite il manager
-- **Fornitori** sono i punti di rifornimento dei prodotti. Ogni fonrnitore fornisce più prodotti e ogni prodotto può essere venduto da più fornitori. Sono coinvolti negli ordini manuali o automatici, alla fine di ogni ordine al fornitore viene aggiornata la quantità a disposizione del fornitore.
+- **Negozi** ogni punto vendità è una entità autonoma nella catena e viene identificato da un codice, ogni negozio ha un responsabile, orari di apertura (gestiti separatamente) e indirizzo. E' il negozio che rilascia la tessera fedeltà al cliente, sempre a gestione del manager, dalla lista dei propri tesserati, scegliendo tra i clienti che non possiedono ancora una tessera fedelta. Se non esistono clienti senza tessera la funzione viene disabilitata. 
+- **Fornitori** sono i punti di rifornimento dei prodotti. Sono identificati da un numero di PIVA (11 caratteri numerici che possono cominciare con 0). Ogni fonrnitore fornisce più prodotti e ogni prodotto può essere venduto da più fornitori. Sono coinvolti negli **ordini**  e alla fine di ogni ordine al fornitore viene aggiornata la quantità a disposizione (diminuita della quantita richiesta), l'ordine riceve una data d'ordine e una presunta data di arrivo dell'ordine (viene generata automaticamente 7gg dalla dat d'ordine), il negozio vede la lista di ordini in attesa e puo segnarli come arrivati, a quel punto la quantita ordinata aumenta il magazzino del negozio.
 
-
+### Altre Entita
+- **Fatture** le fatture hanno un numero unico progressivo, il nome del cliente, una data, uno sconto percentuale applicato grazie ai punti del cliente (deve essere esplicitamente chiesto dal cliente) e il totale pagato (lordo meno lo sconto). Il dettaglio delle fatture vengono salvati separatamente, codice prodotto ordinato, da quale negozio, quantita e il costo lordo senza sconti.
 
 ## 3. Requisiti (dominio)
 - **Negozio**: codice identificativo, responsabile , indirizzo.

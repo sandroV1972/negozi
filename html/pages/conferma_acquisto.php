@@ -6,14 +6,67 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSI
     exit;
 }
 
-// Verifica che ci siano dati di conferma
+// Verifica che ci sia l'id fattura
 if (!isset($_SESSION['conferma_acquisto'])) {
     header('Location: dashboard_cliente.php');
     exit;
 }
 
-$conferma = $_SESSION['conferma_acquisto'];
+$id_fattura = $_SESSION['conferma_acquisto'];
 unset($_SESSION['conferma_acquisto']);
+
+require_once '../config/database.php';
+
+// Leggi dati fattura dal database
+$fattura = null;
+$dettagli = [];
+$punti_totali = 0;
+
+try {
+    $db = getDB();
+
+    // Recupera fattura
+    $stmt = $db->query("SELECT f.id_fattura, f.data_fattura, f.sconto_percentuale, f.totale_pagato
+                        FROM negozi.fatture f
+                        WHERE f.id_fattura = ?", [$id_fattura]);
+    $fattura = $stmt->fetch();
+
+    if ($fattura) {
+        // Recupera dettagli fattura
+        $stmt = $db->query("SELECT df.quantita, df.prezzo_unita, p.nome_prodotto
+                            FROM negozi.dettagli_fattura df
+                            JOIN negozi.prodotti p ON df.prodotto = p.id_prodotto
+                            WHERE df.fattura = ?", [$id_fattura]);
+        $dettagli = $stmt->fetchAll();
+
+        // Calcola subtotale dai dettagli
+        $subtotale = 0;
+        foreach ($dettagli as $det) {
+            $subtotale += $det['prezzo_unita'] * $det['quantita'];
+        }
+        $fattura['subtotale'] = $subtotale;
+
+        $sconto = $subtotale - $fattura['totale_pagato'];
+
+        // Punti guadagnati = parte intera del totale pagato
+        $fattura['punti_guadagnati'] = (int)floor($fattura['totale_pagato']);
+
+        // Recupera saldo punti attuale della tessera
+        $stmt = $db->query("SELECT t.saldo_punti
+                            FROM negozi.tessere t
+                            JOIN negozi.clienti c ON c.tessera = t.id_tessera
+                            WHERE c.utente = ?", [$_SESSION['user_id']]);
+        $tessera = $stmt->fetch();
+        $punti_totali = $tessera ? (int)$tessera['saldo_punti'] : 0;
+    }
+} catch (Exception $e) {
+    $error = $e->getMessage();
+}
+
+if (!$fattura) {
+    header('Location: dashboard_cliente.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -50,63 +103,68 @@ unset($_SESSION['conferma_acquisto']);
             <div class="col-md-6">
                 <div class="card bg-warning text-dark">
                     <div class="card-body text-center">
-                        <h5 class="card-title"><i class="bi bi-star-fill"></i> Punti Fedeltà</h5>
+                        <h5 class="card-title"><i class="bi bi-star-fill"></i> Punti Fedelta</h5>
+                        <?php if ($fattura['punti_sconto'] > 0): ?>
+                            <p class="mb-1">Punti utilizzati: <strong>-<?= $fattura['punti_sconto'] ?></strong></p>
+                        <?php endif; ?>
                         <p class="mb-1">Punti guadagnati con questo acquisto:</p>
-                        <h3 class="mb-2">+<?= $conferma['punti_guadagnati'] ?> punti</h3>
-                        <small>Saldo totale punti: <strong><?= $conferma['punti_totali'] ?></strong></small>
+                        <h3 class="mb-2">+<?= $fattura['punti_guadagnati'] ?> punti</h3>
+                        <small>Saldo totale punti: <strong><?= $punti_totali ?></strong></small>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Fatture generate -->
-        <h4 class="mb-3"><i class="bi bi-receipt"></i> Dettaglio Fatture</h4>
+        <!-- Dettaglio fattura -->
+        <h4 class="mb-3"><i class="bi bi-receipt"></i> Fattura #<?= $fattura['id_fattura'] ?></h4>
 
-        <?php foreach ($conferma['fatture'] as $fattura): ?>
-            <div class="card mb-3">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                    <span>
-                        <i class="bi bi-shop"></i> <?= htmlspecialchars($fattura['nome_negozio']) ?>
-                    </span>
-                    <span class="badge bg-light text-dark">Fattura #<?= $fattura['id_fattura'] ?></span>
-                </div>
-                <div class="card-body">
-                    <table class="table table-sm mb-0">
-                        <thead>
+        <div class="card mb-3">
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Prodotto</th>
+                            <th class="text-center">Quantita</th>
+                            <th class="text-end">Prezzo unitario</th>
+                            <th class="text-end">Subtotale</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($dettagli as $det): ?>
                             <tr>
-                                <th>Prodotto</th>
-                                <th class="text-center">Quantità</th>
-                                <th class="text-end">Prezzo unitario</th>
-                                <th class="text-end">Subtotale</th>
+                                <td><?= htmlspecialchars($det['nome_prodotto']) ?></td>
+                                <td class="text-center"><?= $det['quantita'] ?></td>
+                                <td class="text-end"><?= number_format($det['prezzo_unita'], 2) ?> EUR</td>
+                                <td class="text-end"><?= number_format($det['prezzo_unita'] * $det['quantita'], 2) ?> EUR</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($fattura['dettagli'] as $det): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($det['nome_prodotto']) ?></td>
-                                    <td class="text-center"><?= $det['quantita'] ?></td>
-                                    <td class="text-end"><?= number_format($det['prezzo'], 2) ?></td>
-                                    <td class="text-end"><?= number_format($det['subtotale'], 2) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                        <tfoot>
-                            <tr class="table-secondary">
-                                <td colspan="3" class="text-end"><strong>Totale fattura:</strong></td>
-                                <td class="text-end"><strong><?= number_format($fattura['totale'], 2) ?></strong></td>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end">Subtotale:</td>
+                            <td class="text-end"><?= number_format($fattura['subtotale'], 2) ?> EUR</td>
+                        </tr>
+                        <?php if ($sconto > 0): ?>
+                            <tr class="text-success">
+                                <td colspan="3" class="text-end">Sconto applicato (<?= $fattura['punti_sconto'] ?> punti):</td>
+                                <td class="text-end">-<?= number_format($sconto, 2) ?> EUR</td>
                             </tr>
-                        </tfoot>
-                    </table>
-                </div>
+                        <?php endif; ?>
+                        <tr class="table-secondary">
+                            <td colspan="3" class="text-end"><strong>Totale pagato:</strong></td>
+                            <td class="text-end"><strong><?= number_format($fattura['totale_pagato'], 2) ?> EUR</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
-        <?php endforeach; ?>
+        </div>
 
         <!-- Totale generale -->
         <div class="card bg-success text-white">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-wallet2"></i> Totale pagato</h5>
-                    <h4 class="mb-0"><?= number_format($conferma['totale_generale'], 2) ?></h4>
+                    <h4 class="mb-0"><?= number_format($fattura['totale_pagato'], 2) ?> EUR</h4>
                 </div>
             </div>
         </div>

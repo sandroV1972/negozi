@@ -10,8 +10,10 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSI
 require_once '../config/database.php';
 
 $error = '';
+$success = '';
 $tessere = [];
 $negozio = null;
+$clienti_senza_tessera = [];
 
 // Recupera l'ID del negozio dalla query string
 $id_negozio = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -21,6 +23,23 @@ if ($id_negozio <= 0) {
 } else {
     try {
         $db = getDB();
+
+        // Gestione creazione nuova tessera
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'crea_tessera') {
+            $id_cliente = (int)$_POST['id_cliente'];
+
+            if ($id_cliente > 0) {
+                // Chiama la funzione per creare una nuova tessera per il cliente
+                $stmt = $db->query("SELECT negozi.crea_tessera_cliente(?, ?) AS id_tessera", [$id_cliente, $id_negozio]);
+                $nuova_tessera = $stmt->fetch();
+                $id_tessera = $nuova_tessera['id_tessera'];
+                // la funzione ritorna NULL in caso di errore
+                if (!$id_tessera) {
+                    throw new Exception('Impossibile creare la tessera per il cliente selezionato.');
+                }
+                $success = 'Tessera creata con successo!';
+            }
+        }
 
         // Recupera info negozio
         $stmt = $db->query("SELECT id_negozio, nome_negozio, indirizzo FROM negozi.negozi WHERE id_negozio = ?", [$id_negozio]);
@@ -32,9 +51,13 @@ if ($id_negozio <= 0) {
             // Recupera tessere del negozio usando la funzione
             $stmt = $db->query("SELECT * FROM negozi.tessere_negozio(?)", [$id_negozio]);
             $tessere = $stmt->fetchAll();
+
+            // Recupera clienti senza tessera
+            $stmt = $db->query("SELECT id_cliente, nome, cognome, cf FROM negozi.clienti WHERE tessera IS NULL ORDER BY cognome, nome");
+            $clienti_senza_tessera = $stmt->fetchAll();
         }
     } catch (Exception $e) {
-        $error = 'Errore nel caricamento: ' . $e->getMessage();
+        $error = 'Errore: ' . $e->getMessage();
     }
 }
 ?>
@@ -90,7 +113,16 @@ if ($id_negozio <= 0) {
         <div class="alert alert-danger" role="alert">
             <i class="bi bi-exclamation-triangle"></i> <?= htmlspecialchars($error) ?>
         </div>
-        <?php elseif ($negozio): ?>
+        <?php endif; ?>
+
+        <?php if (!empty($success)): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <?= htmlspecialchars($success) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($negozio): ?>
 
         <!-- Header -->
         <div class="row mb-4">
@@ -101,12 +133,22 @@ if ($id_negozio <= 0) {
                     <?= htmlspecialchars($negozio['indirizzo']) ?>
                 </p>
             </div>
+            <div class="col-auto text-end">
+                <?php if (!empty($clienti_senza_tessera)): ?>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuovaTessera">
+                    <i class="bi bi-person-plus"></i> Nuova Tessera
+                </button>
+                <?php endif; ?>
+            </div>
         </div>
 
         <!-- Lista Tessere -->
+        <?php if (isset($_GET['action']) && $_GET['action'] === 'new'): ?>
+
+        <?php else: ?>
         <div class="card">
-            <div class="card-header">
-                <h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
                     Tessere Emesse (<?= count($tessere) ?>)
                 </h5>
             </div>
@@ -168,6 +210,44 @@ if ($id_negozio <= 0) {
         </div>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
+    <!-- Modal Nuova Tessera -->
+    <?php if (!empty($clienti_senza_tessera)): ?>
+    <div class="modal fade" id="modalNuovaTessera" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-credit-card"></i> Nuova Tessera</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="crea_tessera">
+                        <div class="mb-3">
+                            <label for="id_cliente" class="form-label">Seleziona Cliente</label>
+                            <select class="form-select" id="id_cliente" name="id_cliente" required>
+                                <option value="">-- Seleziona un cliente --</option>
+                                <?php foreach ($clienti_senza_tessera as $cliente): ?>
+                                    <option value="<?= $cliente['id_cliente'] ?>">
+                                        <?= htmlspecialchars($cliente['cognome'] . ' ' . $cliente['nome']) ?>
+                                        (<?= htmlspecialchars($cliente['cf']) ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text">Solo i clienti senza tessera sono mostrati in questa lista.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Crea Tessera
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
