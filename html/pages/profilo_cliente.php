@@ -41,6 +41,37 @@ try {
     $error = $e->getMessage();
 }
 
+// Gestione richiesta tessera
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'richiedi_tessera') {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die('CSRF token non valido.');
+    }
+
+    $id_negozio_scelto = (int)($_POST['id_negozio'] ?? 0);
+
+    if ($id_negozio_scelto <= 0) {
+        $error = "Seleziona un negozio valido.";
+    } elseif ($id_tessera) {
+        $error = "Hai gia una tessera attiva.";
+    } else {
+        try {
+            $db = getDB();
+            $stmt = $db->query("SELECT negozi.crea_tessera_cliente(?, ?) AS id_tessera", [$id_cliente, $id_negozio_scelto]);
+            $nuova_tessera = $stmt->fetch();
+
+            if ($nuova_tessera && $nuova_tessera['id_tessera']) {
+                $_SESSION['message'] = "Tessera creata con successo! Numero tessera: #" . $nuova_tessera['id_tessera'];
+                header("Location: profilo_cliente.php");
+                exit;
+            } else {
+                $error = "Impossibile creare la tessera. Riprova.";
+            }
+        } catch (Exception $e) {
+            $error = "Errore: " . $e->getMessage();
+        }
+    }
+}
+
 // Gestione cambio password
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'cambia_password') {
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
@@ -92,6 +123,18 @@ try {
 } catch (Exception $e) {
     $error = $e->getMessage();
 }
+
+// Recupera lista negozi per richiesta tessera (solo se cliente non ha tessera)
+$negozi = [];
+if (!$id_tessera) {
+    try {
+        $db = getDB();
+        $stmt = $db->query("SELECT id_negozio, nome_negozio, indirizzo FROM negozi.negozi ORDER BY nome_negozio ASC");
+        $negozi = $stmt->fetchAll();
+    } catch (Exception $e) {
+        // Ignora errore, lista vuota
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -101,8 +144,10 @@ try {
     <title>Il mio profilo - Retro Gaming Store</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Retro Arcade Theme -->
+    <link href="../css/retro-arcade.css" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="dashboard_cliente.php">
@@ -112,9 +157,6 @@ try {
                 <a class="nav-link" href="dashboard_cliente.php">
                     <i class="bi bi-arrow-left"></i> Torna al catalogo
                 </a>
-                <?php if ($punti_disponibili > 0): ?>
-                    <span class="badge bg-warning text-dark ms-2"><?= $punti_disponibili ?> punti</span>
-                <?php endif; ?>
             </div>
         </div>
     </nav>
@@ -150,8 +192,15 @@ try {
                             <p><strong>Telefono:</strong> <?= htmlspecialchars($cliente['telefono'] ?? 'Non specificato') ?></p>
                             <p><strong>Email:</strong> <?= htmlspecialchars($_SESSION['user_email'] ?? '') ?></p>
                             <hr>
-                            <p><strong>Tessera:</strong> <?= $id_tessera ? '#' . $id_tessera : 'Nessuna' ?></p>
-                            <p><strong>Punti disponibili:</strong> <span class="badge bg-warning text-dark"><?= $punti_disponibili ?></span></p>
+                            <?php if ($id_tessera): ?>
+                                <p><strong>Tessera:</strong> #<?= $id_tessera ?></p>
+                                <p><strong>Punti disponibili:</strong> <span class="badge bg-warning text-dark"><?= $punti_disponibili ?></span></p>
+                            <?php else: ?>
+                                <p><strong>Tessera:</strong> <span class="text-muted">Nessuna</span></p>
+                                <button type="button" class="btn btn-success btn-sm w-100" data-bs-toggle="modal" data-bs-target="#modalRichiediTessera">
+                                    <i class="bi bi-credit-card"></i> Richiedi Tessera
+                                </button>
+                            <?php endif; ?>
                         <?php else: ?>
                             <p class="text-muted">Dati non disponibili.</p>
                         <?php endif; ?>
@@ -273,6 +322,59 @@ try {
             </div>
         </div>
     </div>
+
+    <!-- Modal Richiedi Tessera -->
+    <?php if (!$id_tessera): ?>
+    <div class="modal fade" id="modalRichiediTessera" tabindex="-1" aria-labelledby="modalRichiediTesseraLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="modalRichiediTesseraLabel">
+                        <i class="bi bi-credit-card"></i> Richiedi Tessera Fedelta
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                        <input type="hidden" name="action" value="richiedi_tessera">
+
+                        <p>Seleziona il negozio presso cui richiedere la tessera fedelta:</p>
+
+                        <?php if (empty($negozi)): ?>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> Nessun negozio disponibile al momento.
+                            </div>
+                        <?php else: ?>
+                            <div class="list-group">
+                                <?php foreach ($negozi as $negozio): ?>
+                                    <label class="list-group-item list-group-item-action d-flex align-items-center">
+                                        <input type="radio" name="id_negozio" value="<?= $negozio['id_negozio'] ?>"
+                                               class="form-check-input me-3" required>
+                                        <div>
+                                            <strong><?= htmlspecialchars($negozio['nome_negozio']) ?></strong>
+                                            <?php if ($negozio['indirizzo']): ?>
+                                                <br><small class="text-muted"><?= htmlspecialchars($negozio['indirizzo']) ?></small>
+                                            <?php endif; ?>
+                                        </div>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <?php if (!empty($negozi)): ?>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Richiedi Tessera
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

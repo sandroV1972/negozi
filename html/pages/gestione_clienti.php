@@ -129,10 +129,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         
     } catch (Exception $e) {
-        if (strpos($e->getMessage(), 'duplicate key') !== false) {
+        $msg = $e->getMessage();
+        if (strpos($msg, 'unique_email') !== false) {
             $error = 'Email già esistente.';
+        } elseif (strpos($msg, 'cf_unique') !== false) {
+            $error = 'Codice Fiscale già esistente.';
+        } elseif (strpos($msg, 'duplicate key') !== false) {
+            $error = 'Email o CF già esistente.';
         } else {
-            $error = 'Errore: ' . $e->getMessage();
+            $error = 'Errore: ' . $msg;
         }
     }
 }
@@ -186,6 +191,8 @@ try {
     <title>Gestione Clienti - Sistema Negozi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Retro Arcade Theme -->
+    <link href="../css/retro-arcade.css" rel="stylesheet">
 </head>
 <body>
     <!-- Navbar -->

@@ -73,34 +73,6 @@ CREATE TABLE auth.utente_ruolo (
 ALTER TABLE auth.utente_ruolo OWNER TO postgres;
 -- ddl-end --
 
--- object: auth.sessions | type: TABLE --
--- DROP TABLE IF EXISTS auth.sessions CASCADE;
-CREATE TABLE auth.sessions (
-	id_sessione uuid NOT NULL,
-	utente integer,
-	creato timestamp NOT NULL DEFAULT now(),
-	scade timestamp NOT NULL DEFAULT now() + interval '7 days',
-	CONSTRAINT sessions_pk PRIMARY KEY (id_sessione)
-);
--- ddl-end --
-ALTER TABLE auth.sessions OWNER TO postgres;
--- ddl-end --
-
--- object: auth.reset_token | type: TABLE --
--- DROP TABLE IF EXISTS auth.reset_token CASCADE;
-CREATE TABLE auth.reset_token (
-	id_token uuid NOT NULL,
-	utente integer,
-	token_hash text NOT NULL,
-	creato timestamp NOT NULL DEFAULT now(),
-	scade timestamp NOT NULL,
-	usato timestamp,
-	CONSTRAINT reset_token_pk PRIMARY KEY (id_token)
-);
--- ddl-end --
-ALTER TABLE auth.reset_token OWNER TO postgres;
--- ddl-end --
-
 -- object: auth.email_lowercase | type: FUNCTION --
 -- DROP FUNCTION IF EXISTS auth.email_lowercase() CASCADE;
 CREATE FUNCTION auth.email_lowercase ()
@@ -302,9 +274,9 @@ CREATE TABLE negozi.ordini_fornitori (
 	fornitore char(11) NOT NULL,
 	negozio integer,
 	prodotto integer,
-	quantita integer,
+	quantita integer NOT NULL,
 	data_ordine timestamp NOT NULL DEFAULT now(),
-	data_consegna date,
+	data_consegna date NOT NULL,
 	stato_ordine text NOT NULL,
 	CONSTRAINT ordini_fornitori_pk PRIMARY KEY (id_ordine),
 	CONSTRAINT check_stato CHECK (stato_ordine IN ('emesso','consegnato','annullato')
@@ -393,9 +365,9 @@ CREATE FUNCTION negozi.archivia_tessere_negozio (_idnegozio integer)
 BEGIN
 	INSERT INTO negozi.storico_tessere
 	    (codice_tessera, cliente, saldo_punti, negozio_emittente, data_emissione)
-	  	SELECT t.id_tessera, c.cliente, t.saldo_punti, t.negozio_emittente, t.data_richiesta
+	  	SELECT t.id_tessera, c.id_cliente, t.saldo_punti, t.negozio_emittente, t.data_richiesta
 	  	FROM negozi.tessere t
-	  	left JOIN negozi.clienti ON c.tessera = t.id_tessera
+	  	left JOIN negozi.clienti c ON c.tessera = t.id_tessera
 		WHERE t.negozio_emittente = _idnegozio;
   
 	  DELETE FROM negozi.tessere
@@ -546,8 +518,8 @@ ALTER FUNCTION negozi.tessere_negozio(integer) OWNER TO postgres;
 -- object: negozi.livelli_sconto | type: TABLE --
 -- DROP TABLE IF EXISTS negozi.livelli_sconto CASCADE;
 CREATE TABLE negozi.livelli_sconto (
-	sconto_percentuale smallint,
-	punti_richiesti integer
+	sconto_percentuale smallint NOT NULL,
+	punti_richiesti integer NOT NULL
 
 );
 -- ddl-end --
@@ -815,7 +787,7 @@ ALTER FUNCTION negozi.crea_tessera_cliente(integer,integer) OWNER TO postgres;
 -- object: negozi.lista_ordini_fornitore | type: FUNCTION --
 -- DROP FUNCTION IF EXISTS negozi.lista_ordini_fornitore(char) CASCADE;
 CREATE FUNCTION negozi.lista_ordini_fornitore (_piva_fornitore char)
-	RETURNS TABLE (nome_fornitore text, nome_prodotto text, nome_negozio text, quantita integer, data_ordine date)
+	RETURNS TABLE (nome_fornitore text, nome_prodotto text, nome_negozio text, quantita integer, data_ordine timestamp, stato_ordine text)
 	LANGUAGE plpgsql
 	VOLATILE 
 	CALLED ON NULL INPUT
@@ -830,7 +802,8 @@ BEGIN
 		p.nome_prodotto,
 		n.nome_negozio,
 		of.quantita,
-		of.data_ordine
+		of.data_ordine,
+		of.stato_ordine
 	  FROM negozi.ordini_fornitori of
 	  LEFT JOIN negozi.fornitori f ON f.piva = of.fornitore
 	  LEFT JOIN negozi.prodotti  p ON p.id_prodotto = of.prodotto
@@ -854,20 +827,6 @@ ON DELETE CASCADE ON UPDATE CASCADE;
 -- ALTER TABLE auth.utente_ruolo DROP CONSTRAINT IF EXISTS fk_ruolo CASCADE;
 ALTER TABLE auth.utente_ruolo ADD CONSTRAINT fk_ruolo FOREIGN KEY (id_ruolo)
 REFERENCES auth.ruolo (id_ruolo) MATCH SIMPLE
-ON DELETE CASCADE ON UPDATE CASCADE;
--- ddl-end --
-
--- object: fk_utente | type: CONSTRAINT --
--- ALTER TABLE auth.sessions DROP CONSTRAINT IF EXISTS fk_utente CASCADE;
-ALTER TABLE auth.sessions ADD CONSTRAINT fk_utente FOREIGN KEY (utente)
-REFERENCES auth.utenti (id_utente) MATCH SIMPLE
-ON DELETE CASCADE ON UPDATE CASCADE;
--- ddl-end --
-
--- object: fk_utente | type: CONSTRAINT --
--- ALTER TABLE auth.reset_token DROP CONSTRAINT IF EXISTS fk_utente CASCADE;
-ALTER TABLE auth.reset_token ADD CONSTRAINT fk_utente FOREIGN KEY (utente)
-REFERENCES auth.utenti (id_utente) MATCH SIMPLE
 ON DELETE CASCADE ON UPDATE CASCADE;
 -- ddl-end --
 

@@ -21,14 +21,7 @@ if (empty($piva)) {
 try {
     $db = getDB();
 
-    $stmt = $db->query("SELECT o.id_ordine, o.quantita, o.data_ordine, o.stato_ordine,
-                               p.nome_prodotto, n.nome_negozio
-                        FROM negozi.ordini_fornitori o
-                        LEFT JOIN negozi.prodotti p ON o.prodotto = p.id_prodotto
-                        LEFT JOIN negozi.negozi n ON o.negozio = n.id_negozio
-                        WHERE o.fornitore = ?
-                        ORDER BY o.data_ordine DESC", [$piva]);
-
+    $stmt = $db->query("SELECT * FROM negozi.lista_ordini_fornitore(?)", [$piva]);
     $ordini = $stmt->fetchAll();
 
     echo json_encode(['ordini' => $ordini]);

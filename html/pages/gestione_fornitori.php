@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 
     $piva = trim($_POST['piva'] ?? '');
-    $nome_fornitore= trim($_POST['nome_fornitore'] ?? '');
+    $ragione_sociale = trim($_POST['ragione_sociale'] ?? '');
     $indirizzo = trim($_POST['indirizzo'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $telefono = trim($_POST['telefono'] ?? '');
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         // Crea nuovo fornitore
         if ($_POST['action'] === 'create') {
-            if (empty($piva) || empty($nome_fornitore)) {
+            if (empty($piva) || empty($ragione_sociale)) {
                 throw new RuntimeException('Partita IVA e Ragione Sociale sono obbligatori.');
             }
 
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
             $db->query("INSERT INTO negozi.fornitori (piva, nome_fornitore, indirizzo, email, telefono)
                         VALUES (?, ?, NULLIF(?,''), NULLIF(?,''), NULLIF(?,''))",
-                        [$piva, $nome_fornitore, $indirizzo, $email, $telefono]);
+                        [$piva, $ragione_sociale, $indirizzo, $email, $telefono]);
 
             $_SESSION['message'] = "Fornitore creato correttamente.";
             header('Location: gestione_fornitori.php');
@@ -151,6 +151,8 @@ try {
     <title>Gestione Fornitori - Sistema Negozi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Retro Arcade Theme -->
+    <link href="../css/retro-arcade.css" rel="stylesheet">
 </head>
 <body>
     <!-- Navbar -->
@@ -248,7 +250,7 @@ try {
                                 <div class="mb-3">
                                     <label for="ragione_sociale" class="form-label">Ragione Sociale*</label>
                                     <input type="text" class="form-control" id="ragione_sociale" name="ragione_sociale"
-                                           value="<?= htmlspecialchars($_POST['ragione_sociale'] ?? $fornitore['ragione_sociale'] ?? '') ?>" required>
+                                           value="<?= htmlspecialchars($_POST['ragione_sociale'] ?? $fornitore['nome_fornitore'] ?? '') ?>" required>
                                 </div>
 
                                 <!-- Indirizzo -->
@@ -315,7 +317,7 @@ try {
                                         <th>Nome Fornitore</th>
                                         <th>Contatti</th>
                                         <th class="text-center">Prodotti</th>
-                                        <th class="text-center">Disponibilità</th>
+                                        <th class="text-center">Magazzino</th>
                                         <th class="text-center">Ordini</th>
                                         <th class="text-center">Azioni</th>
                                     </tr>
@@ -351,7 +353,10 @@ try {
                                                 <span class="badge bg-info"><?= (int)$f['num_prodotti'] ?></span>
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge bg-secondary"><?= (int)($f['totale_disponibile'] ?? 0) ?> pz</span>
+                                                <a href="magazzino_fornitore.php?piva=<?= urlencode($f['piva']) ?>"
+                                                   class="btn btn-sm btn-outline-info" title="Visualizza magazzino">
+                                                    <i class="bi bi-box-seam-fill"></i> <?= (int)($f['totale_disponibile'] ?? 0) ?> pz
+                                                </a>
                                             </td>
                                             <td class="text-center">
                                                 <button type="button" class="btn btn-sm btn-outline-success"
@@ -470,7 +475,7 @@ try {
                             <table class="table table-sm table-striped">
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
+                                        <th>Fornitore</th>
                                         <th>Prodotto</th>
                                         <th>Negozio</th>
                                         <th>Quantità</th>
@@ -489,7 +494,7 @@ try {
 
                         html += `
                             <tr>
-                                <td>#${ordine.id_ordine}</td>
+                                <td>${ordine.nome_fornitore}</td>
                                 <td>${ordine.nome_prodotto || 'N/D'}</td>
                                 <td>${ordine.nome_negozio || 'N/D'}</td>
                                 <td>${ordine.quantita}</td>

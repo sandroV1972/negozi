@@ -20,7 +20,8 @@ if (!isset($_SESSION['carrello'])) {
 
 $message = $_SESSION['message'] ?? '';
 unset($_SESSION['message']);
-$error = '';
+$error = $_SESSION['error'] ?? '';
+unset($_SESSION['error']);
 
 // Recupera dati cliente
 $id_cliente = null;
@@ -114,13 +115,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         ];
                         $_SESSION['message'] = "Aggiunto al carrello: " . $prod['nome_prodotto'] . " x" . $quantita;
                     } else {
-                        $_SESSION['message'] = "Errore: disponibili solo " . $prod['magazzino'] . " unità (già " . $quantita_carrello . " nel carrello)";
+                        $_SESSION['error'] = "Errore: disponibili solo " . $prod['magazzino'] . " unità (già " . $quantita_carrello . " nel carrello)";
                     }
                 } else {
-                    $_SESSION['message'] = "Errore: quantità non disponibile.";
+                    $_SESSION['error'] = "Errore: quantità non disponibile.";
                 }
             } catch (Exception $e) {
-                $_SESSION['message'] = "Errore: " . $e->getMessage();
+                $_SESSION['error'] = "Errore: " . $e->getMessage();
             }
         }
         header("Location: dashboard_cliente.php");
@@ -263,8 +264,10 @@ foreach ($_SESSION['carrello'] as $item) {
     <title>Retro Gaming Store</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Retro Arcade Theme -->
+    <link href="../css/retro-arcade.css" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="dashboard_cliente.php">
@@ -340,9 +343,6 @@ foreach ($_SESSION['carrello'] as $item) {
                 <div class="d-flex justify-content-between mb-3">
                     <strong>Totale:</strong>
                     <strong><?= number_format($totale_carrello, 2) ?></strong>
-                </div>
-                <div class="small text-muted mb-3">
-                    Punti che guadagnerai: <strong><?= (int)($totale_carrello) ?></strong>
                 </div>
                 
                 <div class="small text-muted mb-3">
