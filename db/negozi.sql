@@ -129,6 +129,7 @@ CREATE TABLE negozi.negozi (
 	nome_negozio text NOT NULL,
 	responsabile text NOT NULL,
 	indirizzo text NOT NULL,
+	attivo boolean NOT NULL DEFAULT true,
 	CONSTRAINT negozio_pk PRIMARY KEY (id_negozio)
 );
 -- ddl-end --
@@ -142,7 +143,6 @@ CREATE TABLE negozi.tessere (
 	negozio_emittente integer NOT NULL,
 	data_richiesta date NOT NULL DEFAULT now(),
 	saldo_punti integer NOT NULL DEFAULT 0,
-	archiviata boolean NOT NULL DEFAULT FALSE,
 	CONSTRAINT tessere_pk PRIMARY KEY (id_tessera),
 	CONSTRAINT saldo_punti_neg CHECK (saldo_punti >= 0)
 );
@@ -246,6 +246,7 @@ CREATE TABLE negozi.fornitori (
 	indirizzo text,
 	email text,
 	telefono text,
+	attivo boolean NOT NULL DEFAULT true,
 	CONSTRAINT fornitori_pk PRIMARY KEY (piva)
 );
 -- ddl-end --
@@ -844,11 +845,11 @@ REFERENCES negozi.tessere (id_tessera) MATCH SIMPLE
 ON DELETE SET NULL ON UPDATE NO ACTION;
 -- ddl-end --
 
--- object: tessera_fk | type: CONSTRAINT --
--- ALTER TABLE negozi.tessere DROP CONSTRAINT IF EXISTS tessera_fk CASCADE;
-ALTER TABLE negozi.tessere ADD CONSTRAINT tessera_fk FOREIGN KEY (negozio_emittente)
+-- object: negozio_fk | type: CONSTRAINT --
+-- ALTER TABLE negozi.tessere DROP CONSTRAINT IF EXISTS negozio_fk CASCADE;
+ALTER TABLE negozi.tessere ADD CONSTRAINT negozio_fk FOREIGN KEY (negozio_emittente)
 REFERENCES negozi.negozi (id_negozio) MATCH SIMPLE
-ON DELETE CASCADE ON UPDATE NO ACTION;
+ON DELETE NO ACTION ON UPDATE NO ACTION;
 -- ddl-end --
 
 -- object: negozio_fk | type: CONSTRAINT --

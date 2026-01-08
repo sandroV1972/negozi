@@ -71,8 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 throw new RuntimeException('La Partita IVA deve essere di 11 cifre numeriche.');
             }
 
-            $db->query("INSERT INTO negozi.fornitori (piva, nome_fornitore, indirizzo, email, telefono)
-                        VALUES (?, ?, NULLIF(?,''), NULLIF(?,''), NULLIF(?,''))",
+            $db->query("INSERT INTO negozi.fornitori (piva, nome_fornitore, indirizzo, email, telefono, attivo)
+                        VALUES (?, ?, NULLIF(?,''), NULLIF(?,''), NULLIF(?,''), TRUE)",
                         [$piva, $ragione_sociale, $indirizzo, $email, $telefono]);
 
             $_SESSION['message'] = "Fornitore creato correttamente.";
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 throw new RuntimeException('P.IVA fornitore non valida.');
             }
 
-            $db->query("DELETE FROM negozi.fornitori WHERE piva = ?", [$piva_delete]);
+            $db->query("UPDATE negozi.fornitori SET attivo = FALSE WHERE piva = ?", [$piva_delete]);
 
             $_SESSION['message'] = "Fornitore eliminato correttamente.";
             header('Location: gestione_fornitori.php');

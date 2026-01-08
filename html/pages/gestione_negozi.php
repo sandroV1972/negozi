@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $db->query("DELETE FROM negozi.orari WHERE negozio = ?", [$id_negozio]);
 
                 // 2. Elimina negozio
-                $db->query("DELETE FROM negozi.negozi WHERE id_negozio = ?", [$id_negozio]);
+                $db->query("UPDATE negozi.negozi SET attivo = FALSE WHERE id_negozio = ?", [$id_negozio]);
 
                 // Conferma transazione
                 $db->query("COMMIT");
