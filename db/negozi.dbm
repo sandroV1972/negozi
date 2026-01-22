@@ -3,8 +3,8 @@
 CAUTION: Do not modify this file unless you know what you are doing.
  Unexpected results may occur if the code is changed deliberately.
 -->
-<dbmodel pgmodeler-ver="1.1.3" use-changelog="false" max-obj-count="19"
-	 last-position="-80,-40" last-zoom="0.75" scene-rect="-107.151,-73.4393,2486.26,1178.8"
+<dbmodel pgmodeler-ver="1.1.3" use-changelog="false" max-obj-count="18"
+	 last-position="-80,234" last-zoom="0.75" scene-rect="-107.151,-73.4393,2486.26,1178.8"
 	 default-schema="public" default-owner="postgres"
 	 layers="Default layer"
 	 active-layers="0"
@@ -25,12 +25,15 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	<role name="postgres"/>
 </schema>
 
-<table name="utenti" layers="0" collapse-mode="2" max-obj-count="7" z-value="0">
+<table name="utenti" layers="0" collapse-mode="2" max-obj-count="8" z-value="0">
 	<schema name="auth"/>
 	<role name="postgres"/>
 	<position x="-79.1513" y="699.515"/>
 	<column name="id_utente" not-null="true">
 		<type name="serial" length="0"/>
+	</column>
+	<column name="ruolo" not-null="true">
+		<type name="integer" length="0"/>
 	</column>
 	<column name="email" not-null="true">
 		<type name="text" length="0"/>
@@ -73,21 +76,6 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	</constraint>
 	<constraint name="ruolo_pk" type="pk-constr" table="auth.ruolo">
 		<columns names="id_ruolo" ref-type="src-columns"/>
-	</constraint>
-</table>
-
-<table name="utente_ruolo" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
-	<schema name="auth"/>
-	<role name="postgres"/>
-	<position x="153.909" y="496.363"/>
-	<column name="id_utente" not-null="true">
-		<type name="integer" length="0"/>
-	</column>
-	<column name="id_ruolo" not-null="true">
-		<type name="integer" length="0"/>
-	</column>
-	<constraint name="utente_ruolo_pk" type="pk-constr" table="auth.utente_ruolo">
-		<columns names="id_utente,id_ruolo" ref-type="src-columns"/>
 	</constraint>
 </table>
 
@@ -1019,7 +1007,7 @@ END;]]> </definition>
 <view name="v_archivio_tessere" layers="0" collapse-mode="2" max-obj-count="0" z-value="0">
 	<schema name="negozi"/>
 	<role name="postgres"/>
-	<position x="780" y="516"/>
+	<position x="777.333" y="684"/>
 	<definition> <![CDATA[SELECT 
     c.nome,
     c.cognome,
@@ -1031,15 +1019,9 @@ JOIN negozi.clienti c ON st.cliente = c.id_cliente
 JOIN negozi.negozi n ON st.negozio_emittente = n.id_negozio;]]> </definition>
 </view>
 
-<constraint name="fk_utente" type="fk-constr" comparison-type="MATCH SIMPLE"
-	 upd-action="CASCADE" del-action="CASCADE" ref-table="auth.utenti" table="auth.utente_ruolo">
-	<columns names="id_utente" ref-type="src-columns"/>
-	<columns names="id_utente" ref-type="dst-columns"/>
-</constraint>
-
 <constraint name="fk_ruolo" type="fk-constr" comparison-type="MATCH SIMPLE"
-	 upd-action="CASCADE" del-action="CASCADE" ref-table="auth.ruolo" table="auth.utente_ruolo">
-	<columns names="id_ruolo" ref-type="src-columns"/>
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="auth.ruolo" table="auth.utenti">
+	<columns names="ruolo" ref-type="src-columns"/>
 	<columns names="id_ruolo" ref-type="dst-columns"/>
 </constraint>
 
@@ -1127,16 +1109,6 @@ JOIN negozi.negozi n ON st.negozio_emittente = n.id_negozio;]]> </definition>
 	<columns names="id_prodotto" ref-type="dst-columns"/>
 </constraint>
 
-<relationship name="rel_utente_ruolo_utenti" type="relfk" layers="0"
-	 src-table="auth.utente_ruolo"
-	 dst-table="auth.utenti" reference-fk="fk_utente"
-	 src-required="false" dst-required="true"/>
-
-<relationship name="rel_utente_ruolo_ruolo" type="relfk" layers="0"
-	 src-table="auth.utente_ruolo"
-	 dst-table="auth.ruolo" reference-fk="fk_ruolo"
-	 src-required="false" dst-required="true"/>
-
 <relationship name="rel_tessere_negozio" type="relfk" layers="0"
 	 src-table="negozi.tessere"
 	 dst-table="negozi.negozi" reference-fk="negozio_fk"
@@ -1210,5 +1182,10 @@ JOIN negozi.negozi n ON st.negozio_emittente = n.id_negozio;]]> </definition>
 	 src-table="negozi.clienti"
 	 dst-table="negozi.tessere" reference-fk="tessera_fk"
 	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_utenti_ruolo" type="relfk" layers="0"
+	 src-table="auth.utenti"
+	 dst-table="auth.ruolo" reference-fk="fk_ruolo"
+	 src-required="false" dst-required="true"/>
 
 </dbmodel>

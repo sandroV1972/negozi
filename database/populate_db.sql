@@ -16,7 +16,6 @@ TRUNCATE TABLE negozi.fornitori CASCADE;
 TRUNCATE TABLE negozi.orari CASCADE;
 TRUNCATE TABLE negozi.negozi CASCADE;
 TRUNCATE TABLE negozi.clienti CASCADE;
-TRUNCATE TABLE auth.utente_ruolo CASCADE;
 TRUNCATE TABLE auth.utenti CASCADE;
 TRUNCATE TABLE auth.ruolo CASCADE;
 
@@ -34,43 +33,29 @@ INSERT INTO auth.ruolo (nome, descrizione) VALUES
   ('cliente', 'Cliente finale')
 ON CONFLICT (nome) DO NOTHING;
 
--- MANAGER (password: retro1980)
-INSERT INTO auth.utenti (email, password, attivo) VALUES
-  ('manager@retrogaming.it', '$2y$12$tVK3xXy63eHfjqSvsig0vOfbqw8LI0luAMSLs.9nN3Yp6pg4FNJA.', TRUE)
+-- MANAGER (password: retro1980) - ruolo 1 = manager
+INSERT INTO auth.utenti (ruolo, email, password, attivo) VALUES
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'manager'), 'manager@retrogaming.it', '$2y$12$tVK3xXy63eHfjqSvsig0vOfbqw8LI0luAMSLs.9nN3Yp6pg4FNJA.', TRUE)
 ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO auth.utente_ruolo (id_utente, id_ruolo)
-SELECT u.id_utente, r.id_ruolo
-FROM auth.utenti u, auth.ruolo r
-WHERE u.email = 'manager@retrogaming.it' AND r.nome = 'manager'
-ON CONFLICT DO NOTHING;
-
--- CLIENTI (password: password123)
-INSERT INTO auth.utenti (email, password, attivo) VALUES
-  ('mario.rossi@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('laura.bianchi@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('paolo.verdi@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('anna.neri@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('luca.ferrari@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('giulia.russo@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('marco.colombo@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('sara.ricci@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('andrea.bruno@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('elena.gallo@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('fabio.conti@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('chiara.romano@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('roberto.moretti@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('valentina.fontana@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
-  ('davide.greco@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE)
+-- CLIENTI (password: password123) - ruolo 2 = cliente
+INSERT INTO auth.utenti (ruolo, email, password, attivo) VALUES
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'mario.rossi@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'laura.bianchi@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'paolo.verdi@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'anna.neri@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'luca.ferrari@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'giulia.russo@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'marco.colombo@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'sara.ricci@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'andrea.bruno@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'elena.gallo@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'fabio.conti@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'chiara.romano@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'roberto.moretti@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'valentina.fontana@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE),
+  ((SELECT id_ruolo FROM auth.ruolo WHERE nome = 'cliente'), 'davide.greco@email.it', '$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi', TRUE)
 ON CONFLICT (email) DO NOTHING;
-
--- Ruolo cliente
-INSERT INTO auth.utente_ruolo (id_utente, id_ruolo)
-SELECT u.id_utente, r.id_ruolo FROM auth.utenti u, auth.ruolo r
-WHERE u.email IN ('mario.rossi@email.it', 'laura.bianchi@email.it', 'paolo.verdi@email.it', 'anna.neri@email.it', 'luca.ferrari@email.it',
-                  'giulia.russo@email.it', 'marco.colombo@email.it', 'sara.ricci@email.it', 'andrea.bruno@email.it', 'elena.gallo@email.it',
-                  'fabio.conti@email.it', 'chiara.romano@email.it', 'roberto.moretti@email.it', 'valentina.fontana@email.it', 'davide.greco@email.it')
-AND r.nome = 'cliente' ON CONFLICT DO NOTHING;
 
 -- DATI CLIENTI (CF validi di 16 caratteri con telefoni)
 INSERT INTO negozi.clienti (utente, cf, nome, cognome, telefono) VALUES

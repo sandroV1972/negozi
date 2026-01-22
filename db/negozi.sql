@@ -37,6 +37,7 @@ SET search_path TO pg_catalog,public,negozi,auth;
 -- DROP TABLE IF EXISTS auth.utenti CASCADE;
 CREATE TABLE auth.utenti (
 	id_utente serial NOT NULL,
+	ruolo integer NOT NULL,
 	email text NOT NULL,
 	password text NOT NULL,
 	attivo boolean NOT NULL DEFAULT FALSE,
@@ -60,17 +61,6 @@ CREATE TABLE auth.ruolo (
 );
 -- ddl-end --
 ALTER TABLE auth.ruolo OWNER TO postgres;
--- ddl-end --
-
--- object: auth.utente_ruolo | type: TABLE --
--- DROP TABLE IF EXISTS auth.utente_ruolo CASCADE;
-CREATE TABLE auth.utente_ruolo (
-	id_utente integer NOT NULL,
-	id_ruolo integer NOT NULL,
-	CONSTRAINT utente_ruolo_pk PRIMARY KEY (id_utente,id_ruolo)
-);
--- ddl-end --
-ALTER TABLE auth.utente_ruolo OWNER TO postgres;
 -- ddl-end --
 
 -- object: auth.email_lowercase | type: FUNCTION --
@@ -411,8 +401,8 @@ ALTER FUNCTION negozi.aggiorna_magazzino_fornitore(char,integer,integer) OWNER T
 -- ddl-end --
 
 -- object: negozi.miglior_fornitore | type: FUNCTION --
--- DROP FUNCTION IF EXISTS negozi.miglior_fornitore(integer) CASCADE;
-CREATE FUNCTION negozi.miglior_fornitore (_prodotto integer)
+-- DROP FUNCTION IF EXISTS negozi.miglior_fornitore(integer,integer) CASCADE;
+CREATE FUNCTION negozi.miglior_fornitore (_prodotto integer, _quantita integer)
 	RETURNS char
 	LANGUAGE plpgsql
 	VOLATILE 
@@ -428,6 +418,7 @@ BEGIN
 		FROM negozi.magazzino_fornitore mf
 		JOIN negozi.fornitori f ON mf.piva_fornitore = f.piva
 		WHERE mf.prodotto = _prodotto AND
+			  mf.quantita >= _quantita AND
 			 f.attivo = true
 		ORDER BY mf.prezzo ASC
 		LIMIT 1;
@@ -435,7 +426,7 @@ RETURN v_fornitore;
 END;
 $$;
 -- ddl-end --
-ALTER FUNCTION negozi.miglior_fornitore(integer) OWNER TO postgres;
+ALTER FUNCTION negozi.miglior_fornitore(integer,integer) OWNER TO postgres;
 -- ddl-end --
 
 -- object: negozi.v_saldi_punti_300 | type: VIEW --
@@ -801,18 +792,11 @@ JOIN negozi.negozi n ON st.negozio_emittente = n.id_negozio;
 ALTER VIEW negozi.v_archivio_tessere OWNER TO postgres;
 -- ddl-end --
 
--- object: fk_utente | type: CONSTRAINT --
--- ALTER TABLE auth.utente_ruolo DROP CONSTRAINT IF EXISTS fk_utente CASCADE;
-ALTER TABLE auth.utente_ruolo ADD CONSTRAINT fk_utente FOREIGN KEY (id_utente)
-REFERENCES auth.utenti (id_utente) MATCH SIMPLE
-ON DELETE CASCADE ON UPDATE CASCADE;
--- ddl-end --
-
 -- object: fk_ruolo | type: CONSTRAINT --
--- ALTER TABLE auth.utente_ruolo DROP CONSTRAINT IF EXISTS fk_ruolo CASCADE;
-ALTER TABLE auth.utente_ruolo ADD CONSTRAINT fk_ruolo FOREIGN KEY (id_ruolo)
+-- ALTER TABLE auth.utenti DROP CONSTRAINT IF EXISTS fk_ruolo CASCADE;
+ALTER TABLE auth.utenti ADD CONSTRAINT fk_ruolo FOREIGN KEY (ruolo)
 REFERENCES auth.ruolo (id_ruolo) MATCH SIMPLE
-ON DELETE CASCADE ON UPDATE CASCADE;
+ON DELETE NO ACTION ON UPDATE NO ACTION;
 -- ddl-end --
 
 -- object: utente_fk | type: CONSTRAINT --

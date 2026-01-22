@@ -117,12 +117,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $negozio
                     [$id_negozio, $prodotto, $prezzo]);
 
                 // 2. Trova il miglior fornitore
-                $stmt = $db->query("SELECT negozi.miglior_fornitore(?) AS piva_fornitore", [$prodotto]);
+                $stmt = $db->query("SELECT negozi.miglior_fornitore(?, ?) AS piva_fornitore", [$prodotto, $quantita]);
                 $result = $stmt->fetch();
                 $fornitore = $result['piva_fornitore'] ?? null;
 
                 if (empty($fornitore)) {
-                    throw new RuntimeException('Nessun fornitore disponibile per questo prodotto.');
+                    throw new RuntimeException('Nessun fornitore disponibile per questo prodotto o per questa quantità.');
                 }
 
                 // 3. Crea l'ordine al fornitore
@@ -479,25 +479,46 @@ if ($negozio) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Quando si seleziona un prodotto dal dropdown, apre il modal per aggiungere
+        // Quando si seleziona un prodotto dal dropdown, verifica disponibilità e apre il modal
         const selectNuovoProdotto = document.getElementById('select_nuovo_prodotto');
         if (selectNuovoProdotto) {
-            selectNuovoProdotto.addEventListener('change', function() {
+            selectNuovoProdotto.addEventListener('change', async function() {
                 const select = this;
                 const selectedOption = select.options[select.selectedIndex];
                 const prodottoId = select.value;
                 const nomeProdotto = selectedOption.getAttribute('data-nome');
 
                 if (prodottoId) {
-                    // Imposta i valori nel modal
-                    document.getElementById('add_prodotto').value = prodottoId;
-                    document.getElementById('add_nome_prodotto').value = nomeProdotto;
-                    document.getElementById('add_prezzo').value = '';
-                    document.getElementById('add_quantita').value = 1;
+                    // Verifica disponibilità presso i fornitori
+                    try {
+                        const response = await fetch(`api/check_disponibilita_prodotto.php?id_prodotto=${prodottoId}`);
+                        const data = await response.json();
 
-                    // Apre il modal
-                    const modal = new bootstrap.Modal(document.getElementById('modalAggiungiProdotto'));
-                    modal.show();
+                        if (data.error) {
+                            alert('Errore: ' + data.error);
+                            select.value = '';
+                            return;
+                        }
+
+                        if (!data.disponibile) {
+                            alert('Nessun fornitore ha questo prodotto disponibile in magazzino.');
+                            select.value = '';
+                            return;
+                        }
+
+                        // Imposta i valori nel modal
+                        document.getElementById('add_prodotto').value = prodottoId;
+                        document.getElementById('add_nome_prodotto').value = nomeProdotto;
+                        document.getElementById('add_prezzo').value = '';
+                        document.getElementById('add_quantita').value = 1;
+
+                        // Apre il modal
+                        const modal = new bootstrap.Modal(document.getElementById('modalAggiungiProdotto'));
+                        modal.show();
+                    } catch (error) {
+                        alert('Errore nella verifica della disponibilità.');
+                        select.value = '';
+                    }
                 }
             });
 

@@ -34,10 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db = getDB();
 
         // Query con JOIN per ottenere anche il ruolo
-        $sql = "SELECT u.id_utente as id, u.email, u.password, u.attivo, r.nome as ruolo
+        $sql = "SELECT  u.id_utente as id,
+                        u.email,
+                        u.password,
+                        u.attivo,
+                        r.nome as ruolo
                 FROM auth.utenti u
-                LEFT JOIN auth.utente_ruolo ur ON u.id_utente = ur.id_utente
-                LEFT JOIN auth.ruolo r ON ur.id_ruolo = r.id_ruolo
+                LEFT JOIN auth.ruolo r ON u.ruolo = r.id_ruolo
                 WHERE u.email = ? AND u.attivo = TRUE";
 
         $stmt = $db->query($sql, [$email]);
