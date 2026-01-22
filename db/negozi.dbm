@@ -4,7 +4,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
  Unexpected results may occur if the code is changed deliberately.
 -->
 <dbmodel pgmodeler-ver="1.1.3" use-changelog="false" max-obj-count="19"
-	 last-position="51,-55" last-zoom="0.75" scene-rect="-128.485,-73.4393,2552.92,1180.14"
+	 last-position="-80,-40" last-zoom="0.75" scene-rect="-107.151,-73.4393,2486.26,1178.8"
 	 default-schema="public" default-owner="postgres"
 	 layers="Default layer"
 	 active-layers="0"
@@ -251,7 +251,7 @@ IF OLD.attivo = TRUE and NEW.attivo = FALSE THEN
 	PERFORM negozi.archivia_tessere_negozio (
     		OLD.id_negozio
 	);
-	RETURN OLD;
+	RETURN NEW;
 END IF;
 END;]]> </definition>
 </function>
@@ -474,47 +474,6 @@ END;]]> </definition>
 	</constraint>
 </table>
 
-<function name="ricalcola_totale_fattura"
-		window-func="false"
-		returns-setof="false"
-		behavior-type="CALLED ON NULL INPUT"
-		function-type="VOLATILE"
-		security-type="SECURITY INVOKER"
-		parallel-type="PARALLEL UNSAFE"
-		execution-cost="1"
-		row-amount="0">
-	<schema name="negozi"/>
-	<role name="postgres"/>
-	<language name="plpgsql"/>
-	<return-type>
-	<type name="void" length="0"/>
-	</return-type>
-	<parameter name="_idfattura" in="true">
-		<type name="integer" length="0"/>
-	</parameter>
-	<definition> <![CDATA[DECLARE
-  v_subtot  NUMERIC := 0;
-  v_sconto  NUMERIC := 0;
-  v_totale  NUMERIC := 0;
-BEGIN
-  SELECT COALESCE(SUM(quantita * prezzo_unita),0)
-    INTO v_subtot
-  FROM negozi.dettagli_fattura
-  WHERE fattura = _idfattura;
-
-  SELECT COALESCE(sconto_percentuale,0)
-    INTO v_sconto
-  FROM negozi.fatture
-  WHERE id_fattura = _idfattura;
-
-  v_totale := GREATEST(v_subtot * (1 - v_sconto/100.0), 0);
-
-  UPDATE negozi.fatture
-     SET totale_pagato = v_totale
-   WHERE id_fattura = _idfattura;
-END;]]> </definition>
-</function>
-
 <function name="archivia_tessere_negozio"
 		window-func="false"
 		returns-setof="false"
@@ -638,12 +597,18 @@ END;
 	<parameter name="_prodotto">
 		<type name="integer" length="0"/>
 	</parameter>
+	<parameter name="_quantita">
+		<type name="integer" length="0"/>
+	</parameter>
 	<definition> <![CDATA[DECLARE 
 	v_fornitore CHAR(11);
 BEGIN
 	SELECT piva_fornitore INTO v_fornitore
 		FROM negozi.magazzino_fornitore mf
-		WHERE mf.prodotto = _prodotto 
+		JOIN negozi.fornitori f ON mf.piva_fornitore = f.piva
+		WHERE mf.prodotto = _prodotto AND
+			  mf.quantita >= _quantita AND
+			 f.attivo = true
 		ORDER BY mf.prezzo ASC
 		LIMIT 1;
 RETURN v_fornitore;
@@ -1050,6 +1015,21 @@ END;]]> </definition>
   ORDER BY of.data_ordine DESC, of.id_ordine DESC;
 END;]]> </definition>
 </function>
+
+<view name="v_archivio_tessere" layers="0" collapse-mode="2" max-obj-count="0" z-value="0">
+	<schema name="negozi"/>
+	<role name="postgres"/>
+	<position x="780" y="516"/>
+	<definition> <![CDATA[SELECT 
+    c.nome,
+    c.cognome,
+    st.codice_tessera,
+    n.nome_negozio,
+    st.saldo_punti
+FROM negozi.storico_tessere st
+JOIN negozi.clienti c ON st.cliente = c.id_cliente
+JOIN negozi.negozi n ON st.negozio_emittente = n.id_negozio;]]> </definition>
+</view>
 
 <constraint name="fk_utente" type="fk-constr" comparison-type="MATCH SIMPLE"
 	 upd-action="CASCADE" del-action="CASCADE" ref-table="auth.utenti" table="auth.utente_ruolo">

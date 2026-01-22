@@ -134,6 +134,7 @@ try {
                                SUM(mf.quantita) as totale_disponibile
                         FROM negozi.fornitori f
                         LEFT JOIN negozi.magazzino_fornitore mf ON f.piva = mf.piva_fornitore
+                        WHERE f.attivo = TRUE
                         GROUP BY f.piva, f.nome_fornitore, f.indirizzo, f.email, f.telefono
                         ORDER BY f.nome_fornitore ASC");
     $fornitori = $stmt->fetchAll();

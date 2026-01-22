@@ -119,6 +119,9 @@ require_once '../config/database.php';
                             <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalClientiTop">
                                 <i class="bi bi-star"></i> Clienti 300 punti
                             </button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalTessereArchiviate">
+                                <i class="bi bi-archive"></i> Tessere Archiviate
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -238,6 +241,32 @@ require_once '../config/database.php';
         </div>
     </div>
 
+    <!-- Modal Tessere Archiviate -->
+    <div class="modal fade" id="modalTessereArchiviate" tabindex="-1" aria-labelledby="modalTessereArchiviateLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTessereArchiviateLabel">
+                        <i class="bi bi-archive"></i> Tessere Archiviate (Negozi Cancellati)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalTessereArchiviateBody">
+                    <!-- Contenuto caricato via fetch -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-secondary" role="status">
+                            <span class="visually-hidden">Caricamento...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Caricamento dati...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -302,6 +331,79 @@ require_once '../config/database.php';
                         body.innerHTML = `
                             <div class="alert alert-danger">
                                 <i class="bi bi-exclamation-triangle"></i> Attenzione: ${data.error || 'Errore sconosciuto'}
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    body.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> Errore di connessione: ${error.message}
+                        </div>
+                    `;
+                });
+        });
+
+        // Carica dati tessere archiviate quando si apre la modale
+        document.getElementById('modalTessereArchiviate').addEventListener('show.bs.modal', function () {
+            const body = document.getElementById('modalTessereArchiviateBody');
+
+            // Mostra spinner
+            body.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-secondary" role="status">
+                        <span class="visually-hidden">Caricamento...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Caricamento dati...</p>
+                </div>
+            `;
+
+            // Fetch dati dall'API
+            fetch('api/tessere_archiviate.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data.length > 0) {
+                        let html = `
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Cliente</th>
+                                            <th>N° Tessera</th>
+                                            <th>Negozio</th>
+                                            <th>Punti</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        data.data.forEach(t => {
+                            html += `
+                                <tr>
+                                    <td>${t.nome} ${t.cognome || ''}</td>
+                                    <td>${t.codice_tessera}</td>
+                                    <td>${t.nome_negozio || '-'}</td>
+                                    <td><span class="badge bg-secondary">${t.saldo_punti} punti</span></td>
+                                </tr>
+                            `;
+                        });
+                        html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="text-muted mt-2">Totale: ${data.count} tessere archiviate</p>
+                        `;
+                        body.innerHTML = html;
+                    } else if (data.success && data.data.length === 0) {
+                        body.innerHTML = `
+                            <div class="text-center py-5">
+                                <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                                <p class="mt-3 text-muted">Nessuna tessera archiviata trovata.</p>
+                            </div>
+                        `;
+                    } else {
+                        body.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i> Errore: ${data.error || 'Errore sconosciuto'}
                             </div>
                         `;
                     }

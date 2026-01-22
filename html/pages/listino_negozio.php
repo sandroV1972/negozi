@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $negozio
                 $db->query("BEGIN");
 
                 // Trova il miglior fornitore usando la funzione del database
-                $stmt = $db->query("SELECT negozi.miglior_fornitore(?) AS piva_fornitore", [$prodotto]);
+                $stmt = $db->query("SELECT negozi.miglior_fornitore(?, ?) AS piva_fornitore", [$prodotto, $quantita]);
                 $result = $stmt->fetch();
                 $fornitore = $result['piva_fornitore'] ?? null;
 
@@ -94,10 +94,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $negozio
             }
         }
 
-        // Aggiungi prodotto al listino
+        // Aggiungi prodotto al listino con ordine automatico al miglior fornitore
         if ($_POST['action'] === 'add') {
             $prodotto = (int)($_POST['prodotto'] ?? 0);
             $prezzo = (float)($_POST['prezzo'] ?? 0);
+            $quantita = (int)($_POST['quantita'] ?? 0);
 
             if ($prodotto <= 0) {
                 throw new RuntimeException('Seleziona un prodotto valido.');
@@ -105,13 +106,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $negozio
             if ($prezzo <= 0) {
                 throw new RuntimeException('Il prezzo deve essere maggiore di zero.');
             }
+            if ($quantita <= 0) {
+                throw new RuntimeException('La quantità deve essere maggiore di zero.');
+            }
 
-            $db->query("INSERT INTO negozi.listino_negozio (negozio, prodotto, prezzo_listino) VALUES (?, ?, ?)",
-                [$id_negozio, $prodotto, $prezzo]);
+            $db->query("BEGIN");
+            try {
+                // 1. Inserisce il prodotto nel listino (magazzino inizia a 0)
+                $db->query("INSERT INTO negozi.listino_negozio (negozio, prodotto, prezzo_listino, magazzino) VALUES (?, ?, ?, 0)",
+                    [$id_negozio, $prodotto, $prezzo]);
 
-            $_SESSION['message'] = "Prodotto aggiunto al listino.";
-            header("Location: listino_negozio.php?id=$id_negozio");
-            exit;
+                // 2. Trova il miglior fornitore
+                $stmt = $db->query("SELECT negozi.miglior_fornitore(?) AS piva_fornitore", [$prodotto]);
+                $result = $stmt->fetch();
+                $fornitore = $result['piva_fornitore'] ?? null;
+
+                if (empty($fornitore)) {
+                    throw new RuntimeException('Nessun fornitore disponibile per questo prodotto.');
+                }
+
+                // 3. Crea l'ordine al fornitore
+                $db->query("INSERT INTO negozi.ordini_fornitori (negozio, prodotto, fornitore, quantita, data_ordine, data_consegna, stato_ordine)
+                            VALUES (?, ?, ?::char(11), ?, ?, ?, 'emesso')",
+                    [$id_negozio, $prodotto, $fornitore, $quantita, date('Y-m-d'), date('Y-m-d', strtotime('+7 days'))]);
+
+                $db->query("COMMIT");
+
+                $_SESSION['message'] = "Prodotto aggiunto al listino e ordine effettuato al miglior fornitore!";
+                header("Location: listino_negozio.php?id=$id_negozio");
+                exit;
+            } catch (Exception $e) {
+                $db->query("ROLLBACK");
+                throw $e;
+            }
         }
 
         // Aggiorna prezzo
@@ -259,28 +286,20 @@ if ($negozio) {
                 <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Aggiungi Prodotto al Listino</h5>
             </div>
             <div class="card-body">
-                <form method="POST" class="row g-3 align-items-end">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                    <input type="hidden" name="action" value="add">
-                    <div class="col-md-6">
-                        <label for="prodotto" class="form-label">Prodotto</label>
-                        <select class="form-select" id="prodotto" name="prodotto" required>
-                            <option value="">Seleziona un prodotto...</option>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-8">
+                        <label for="select_nuovo_prodotto" class="form-label">Seleziona un prodotto da aggiungere</label>
+                        <select class="form-select" id="select_nuovo_prodotto">
+                            <option value="">-- Seleziona prodotto --</option>
                             <?php foreach ($prodotti_disponibili as $prod): ?>
-                                <option value="<?= $prod['id_prodotto'] ?>"><?= htmlspecialchars($prod['nome_prodotto']) ?></option>
+                                <option value="<?= $prod['id_prodotto'] ?>" data-nome="<?= htmlspecialchars($prod['nome_prodotto']) ?>">
+                                    <?= htmlspecialchars($prod['nome_prodotto']) ?>
+                                </option>
                             <?php endforeach; ?>
                         </select>
+                        <div class="form-text">Il prodotto verrà aggiunto al listino e verrà creato un ordine al miglior fornitore.</div>
                     </div>
-                    <div class="col-md-3">
-                        <label for="prezzo" class="form-label">Prezzo (€)</label>
-                        <input type="number" step="0.01" min="0.01" class="form-control" id="prezzo" name="prezzo" required>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-plus"></i> Aggiungi
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
         <?php endif; ?>
@@ -411,9 +430,83 @@ if ($negozio) {
         </div>
     </div>
 
+    <!-- Modal Aggiungi Nuovo Prodotto al Listino -->
+    <div class="modal fade" id="modalAggiungiProdotto" tabindex="-1" aria-labelledby="modalAggiungiProdottoLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" id="formAggiungiProdotto">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="prodotto" id="add_prodotto">
+
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="modalAggiungiProdottoLabel">
+                            <i class="bi bi-plus-circle"></i> Aggiungi Prodotto al Listino
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Prodotto</label>
+                            <input type="text" class="form-control" id="add_nome_prodotto" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="add_prezzo" class="form-label">Prezzo di Listino (€) *</label>
+                            <input type="number" class="form-control" id="add_prezzo" name="prezzo"
+                                   min="0.01" step="0.01" required placeholder="Es: 149.99">
+                            <div class="form-text">Il prezzo a cui venderai questo prodotto.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="add_quantita" class="form-label">Quantità da Ordinare *</label>
+                            <input type="number" class="form-control" id="add_quantita" name="quantita"
+                                   min="1" step="1" value="1" required placeholder="Es: 10">
+                            <div class="form-text">Verrà creato automaticamente un ordine al miglior fornitore.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Aggiungi e Ordina
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // Quando si seleziona un prodotto dal dropdown, apre il modal per aggiungere
+        const selectNuovoProdotto = document.getElementById('select_nuovo_prodotto');
+        if (selectNuovoProdotto) {
+            selectNuovoProdotto.addEventListener('change', function() {
+                const select = this;
+                const selectedOption = select.options[select.selectedIndex];
+                const prodottoId = select.value;
+                const nomeProdotto = selectedOption.getAttribute('data-nome');
+
+                if (prodottoId) {
+                    // Imposta i valori nel modal
+                    document.getElementById('add_prodotto').value = prodottoId;
+                    document.getElementById('add_nome_prodotto').value = nomeProdotto;
+                    document.getElementById('add_prezzo').value = '';
+                    document.getElementById('add_quantita').value = 1;
+
+                    // Apre il modal
+                    const modal = new bootstrap.Modal(document.getElementById('modalAggiungiProdotto'));
+                    modal.show();
+                }
+            });
+
+            // Quando il modal si chiude, resetta il dropdown
+            document.getElementById('modalAggiungiProdotto').addEventListener('hidden.bs.modal', function() {
+                selectNuovoProdotto.value = '';
+            });
+        }
+
         function rimuoviProdotto(prodottoId, nomeProdotto) {
             if (confirm('Sei sicuro di voler rimuovere "' + nomeProdotto + '" dal listino?')) {
                 const form = document.createElement('form');

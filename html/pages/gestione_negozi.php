@@ -215,6 +215,7 @@ try {
         // Query diretta negozi con orari
         $stmt = $db->query("SELECT n.id_negozio, n.nome_negozio, n.indirizzo, n.responsabile
                             FROM negozi.negozi n
+                            WHERE n.attivo = TRUE
                             ORDER BY n.id_negozio ASC;");
         $negozi = $stmt->fetchAll();
     }

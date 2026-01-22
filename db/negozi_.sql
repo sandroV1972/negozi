@@ -317,6 +317,43 @@ CREATE TABLE negozi.dettagli_fattura (
 ALTER TABLE negozi.dettagli_fattura OWNER TO postgres;
 -- ddl-end --
 
+-- object: negozi.ricalcola_totale_fattura | type: FUNCTION --
+-- DROP FUNCTION IF EXISTS negozi.ricalcola_totale_fattura(integer) CASCADE;
+CREATE FUNCTION negozi.ricalcola_totale_fattura (IN _idfattura integer)
+	RETURNS void
+	LANGUAGE plpgsql
+	VOLATILE 
+	CALLED ON NULL INPUT
+	SECURITY INVOKER
+	PARALLEL UNSAFE
+	COST 1
+	AS $$
+DECLARE
+  v_subtot  NUMERIC := 0;
+  v_sconto  NUMERIC := 0;
+  v_totale  NUMERIC := 0;
+BEGIN
+  SELECT COALESCE(SUM(quantita * prezzo_unita),0)
+    INTO v_subtot
+  FROM negozi.dettagli_fattura
+  WHERE fattura = _idfattura;
+
+  SELECT COALESCE(sconto_percentuale,0)
+    INTO v_sconto
+  FROM negozi.fatture
+  WHERE id_fattura = _idfattura;
+
+  v_totale := GREATEST(v_subtot * (1 - v_sconto/100.0), 0);
+
+  UPDATE negozi.fatture
+     SET totale_pagato = v_totale
+   WHERE id_fattura = _idfattura;
+END;
+$$;
+-- ddl-end --
+ALTER FUNCTION negozi.ricalcola_totale_fattura(integer) OWNER TO postgres;
+-- ddl-end --
+
 -- object: negozi.archivia_tessere_negozio | type: FUNCTION --
 -- DROP FUNCTION IF EXISTS negozi.archivia_tessere_negozio(integer) CASCADE;
 CREATE FUNCTION negozi.archivia_tessere_negozio (_idnegozio integer)
@@ -782,23 +819,6 @@ END;
 $$;
 -- ddl-end --
 ALTER FUNCTION negozi.lista_ordini_fornitore(char) OWNER TO postgres;
--- ddl-end --
-
--- object: negozi.v_archivio_tessere | type: VIEW --
--- DROP VIEW IF EXISTS negozi.v_archivio_tessere CASCADE;
-CREATE VIEW negozi.v_archivio_tessere
-AS 
-SELECT 
-    c.nome,
-    c.cognome,
-    st.codice_tessera,
-    n.nome_negozio,
-    st.saldo_punti
-FROM negozi.storico_tessere st
-JOIN negozi.clienti c ON st.cliente = c.id_cliente
-JOIN negozi.negozi n ON st.negozio_emittente = n.id_negozio;
--- ddl-end --
-ALTER VIEW negozi.v_archivio_tessere OWNER TO postgres;
 -- ddl-end --
 
 -- object: fk_utente | type: CONSTRAINT --
