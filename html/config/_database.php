@@ -121,17 +121,12 @@ class Database {
     
     public function testConnection() {
         try {
-            $stmtName = 'stmt_test_connection';
-            $prepared = pg_prepare($this->connection, $stmtName, "SELECT version(), current_database(), current_user");
-            if (!$prepared) {
-                throw new Exception(pg_last_error($this->connection));
-            }
-            $result = pg_execute($this->connection, $stmtName, []);
+            $result = pg_query($this->connection, "SELECT version(), current_database(), current_user");
             if (!$result) {
                 throw new Exception(pg_last_error($this->connection));
             }
 
-            $row = pg_fetch_assoc($result);
+            $row = pg_fetch_assoc($result);  // Solo 1 parametro!
             pg_free_result($result);
 
             return [
@@ -201,23 +196,27 @@ class Database {
             // Valida la query prima di prepararla
             $this->validateSql($sql);
 
-            // Converti i placeholder da ? a $1, $2, $3...
-            $count = 1;
-            $pg_sql = preg_replace_callback('/\?/', function() use (&$count) {
-                return '$' . $count++;
-            }, $sql);
+            if (empty($params)) {
+                $stmt = pg_query($this->connection, $sql);
+            } else {
+                // Converti i placeholder da ? a $1, $2, $3...
+                $count = 1;
+                /*
+                preg_replace_callback('/\?/', ..., $sql) 
+                — cerca ogni ? nella stringa $sql e per ognuno esegue la funzione callback.
+                function() use (&$count) 
+                — la funzione anonima usa la variabile $count (inizializzata a 1) per riferimento (&). 
+                  Il & è fondamentale: senza di esso, $count non verrebbe incrementato tra una chiamata e l'altra e resterebbe sempre 1.
+                return '$' . $count++ 
+                — restituisce $1 la prima volta, $2 la seconda, ecc. Il ++ post-incremento restituisce il valore corrente e poi lo incrementa.
+                */
+                $pg_sql = preg_replace_callback('/\?/', function() use (&$count) {
+                    return '$' . $count++;
+                }, $sql);
 
-            // Nome univoco per ogni statement preparato
-            $stmtName = 'stmt_' . md5($pg_sql);
-
-            // Prepara la query
-            $prepared = pg_prepare($this->connection, $stmtName, $pg_sql);
-            if (!$prepared) {
-                throw new Exception(pg_last_error($this->connection));
+                $stmt = pg_query_params($this->connection, $pg_sql, $params);
             }
 
-            // Esegui la query preparata
-            $stmt = pg_execute($this->connection, $stmtName, $params);
             if (!$stmt) {
                 throw new Exception(pg_last_error($this->connection));
             }
@@ -238,12 +237,8 @@ class Database {
      */
     public function lastInsertId($sequenceName) {
         // Escape usando pg_escape_literal per passare come stringa a currval()
-        $stmtName = 'stmt_lastid_' . md5($sequenceName);
-        $prepared = pg_prepare($this->connection, $stmtName, "SELECT currval($1)");
-        if (!$prepared) {
-            throw new Exception("lastInsertId error: " . pg_last_error($this->connection));
-        }
-        $result = pg_execute($this->connection, $stmtName, [$sequenceName]);
+        $escapedSeq = pg_escape_literal($this->connection, $sequenceName);
+        $result = pg_query($this->connection, "SELECT currval($escapedSeq)");
         if (!$result) {
             throw new Exception("lastInsertId error: " . pg_last_error($this->connection));
         }
