@@ -16,6 +16,29 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+DROP DATABASE negozi_db;
+--
+-- Name: negozi_db; Type: DATABASE; Schema: -; Owner: postgres
+--
+
+CREATE DATABASE negozi_db WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'en_GB.UTF-8';
+
+
+ALTER DATABASE negozi_db OWNER TO postgres;
+
+\connect negozi_db
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
 --
 -- Name: auth; Type: SCHEMA; Schema: -; Owner: postgres
 --
@@ -447,23 +470,12 @@ ALTER SEQUENCE auth.ruolo_id_ruolo_seq OWNED BY auth.ruolo.id_ruolo;
 
 
 --
--- Name: utente_ruolo; Type: TABLE; Schema: auth; Owner: postgres
---
-
-CREATE TABLE auth.utente_ruolo (
-    id_utente integer NOT NULL,
-    id_ruolo integer NOT NULL
-);
-
-
-ALTER TABLE auth.utente_ruolo OWNER TO postgres;
-
---
 -- Name: utenti; Type: TABLE; Schema: auth; Owner: postgres
 --
 
 CREATE TABLE auth.utenti (
     id_utente integer NOT NULL,
+    ruolo integer NOT NULL,
     email text NOT NULL,
     password text NOT NULL,
     attivo boolean DEFAULT false NOT NULL,
@@ -960,50 +972,26 @@ COPY auth.ruolo (id_ruolo, nome, descrizione) FROM stdin;
 
 
 --
--- Data for Name: utente_ruolo; Type: TABLE DATA; Schema: auth; Owner: postgres
---
-
-COPY auth.utente_ruolo (id_utente, id_ruolo) FROM stdin;
-1	1
-2	2
-3	2
-4	2
-5	2
-6	2
-7	2
-8	2
-9	2
-10	2
-11	2
-12	2
-13	2
-14	2
-15	2
-16	2
-\.
-
-
---
 -- Data for Name: utenti; Type: TABLE DATA; Schema: auth; Owner: postgres
 --
 
-COPY auth.utenti (id_utente, email, password, attivo, creato, ultimo_accesso) FROM stdin;
-3	laura.bianchi@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-4	paolo.verdi@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-5	anna.neri@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-6	luca.ferrari@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-7	giulia.russo@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-8	marco.colombo@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-9	sara.ricci@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-10	andrea.bruno@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-11	elena.gallo@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-12	fabio.conti@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-13	chiara.romano@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-14	roberto.moretti@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-15	valentina.fontana@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-16	davide.greco@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	\N
-2	mario.rossi@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-21 21:48:11.462523	2026-01-22 07:36:13.490022
-1	manager@retrogaming.it	$2y$12$tVK3xXy63eHfjqSvsig0vOfbqw8LI0luAMSLs.9nN3Yp6pg4FNJA.	t	2026-01-21 21:48:11.462523	2026-01-22 07:37:28.993001
+COPY auth.utenti (id_utente, ruolo, email, password, attivo, creato, ultimo_accesso) FROM stdin;
+3	2	laura.bianchi@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+4	2	paolo.verdi@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+5	2	anna.neri@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+6	2	luca.ferrari@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+7	2	giulia.russo@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+8	2	marco.colombo@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+9	2	sara.ricci@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+10	2	andrea.bruno@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+11	2	elena.gallo@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+12	2	fabio.conti@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+13	2	chiara.romano@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+14	2	roberto.moretti@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+15	2	valentina.fontana@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+16	2	davide.greco@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	\N
+2	2	mario.rossi@email.it	$2y$12$3s0hbFChwthdBVaLLCnnveeJAkj96ifquHpuW/hQJZvKtU43EloXi	t	2026-01-22 18:31:32.413256	2026-01-22 20:50:41.751292
+1	1	manager@retrogaming.it	$2y$12$tVK3xXy63eHfjqSvsig0vOfbqw8LI0luAMSLs.9nN3Yp6pg4FNJA.	t	2026-01-22 18:31:32.413256	2026-01-22 20:51:13.145484
 \.
 
 
@@ -1035,7 +1023,6 @@ COPY negozi.clienti (id_cliente, cf, nome, cognome, utente, telefono, tessera) F
 --
 
 COPY negozi.dettagli_fattura (fattura, prodotto, quantita, prezzo_unita) FROM stdin;
-1	8	1	124.99
 \.
 
 
@@ -1044,7 +1031,6 @@ COPY negozi.dettagli_fattura (fattura, prodotto, quantita, prezzo_unita) FROM st
 --
 
 COPY negozi.fatture (id_fattura, cliente, data_fattura, sconto_percentuale, totale_pagato) FROM stdin;
-1	1	2026-01-22	0	124.99
 \.
 
 
@@ -1057,7 +1043,6 @@ COPY negozi.fornitori (piva, nome_fornitore, indirizzo, email, telefono, attivo)
 09876543210	Retro Gaming Italia SPA	Viale Europa 123, Roma	vendite@retrogamingitalia.it	06-12345678	t
 11223344556	Classic Electronics Distribution	Corso Francia 88, Torino	ordini@classicelectronics.it	011-9876543	t
 66554433221	Old School Tech Supply	Via Bologna 67, Firenze	supply@oldschooltech.it	055-7654321	t
-01482870936	Il Fornitore	Via Brombol 23, Poggibonsi	\N	\N	t
 \.
 
 
@@ -1069,6 +1054,7 @@ COPY negozi.listino_negozio (negozio, prodotto, prezzo_listino, magazzino) FROM 
 1	1	149.99	8
 1	2	349.99	5
 1	3	109.99	12
+1	4	449.99	3
 1	5	139.99	7
 1	6	119.99	6
 1	7	179.99	4
@@ -1134,6 +1120,7 @@ COPY negozi.listino_negozio (negozio, prodotto, prezzo_listino, magazzino) FROM 
 3	5	134.99	4
 3	6	114.99	4
 3	7	169.99	3
+3	8	124.99	10
 3	9	89.99	7
 3	10	79.99	5
 3	11	36.99	18
@@ -1219,8 +1206,6 @@ COPY negozi.listino_negozio (negozio, prodotto, prezzo_listino, magazzino) FROM 
 5	29	56.99	3
 5	30	31.99	14
 5	31	75.99	6
-1	4	449.99	5
-3	8	124.99	9
 \.
 
 
@@ -1251,6 +1236,7 @@ COPY negozi.magazzino_fornitore (piva_fornitore, prodotto, quantita, prezzo) FRO
 11223344556	3	30	80.00
 11223344556	4	20	355.00
 01234567890	4	15	360.00
+66554433221	4	18	345.00
 66554433221	5	35	115.00
 01234567890	5	28	105.00
 11223344556	5	22	112.00
@@ -1336,9 +1322,6 @@ COPY negozi.magazzino_fornitore (piva_fornitore, prodotto, quantita, prezzo) FRO
 01234567890	31	20	55.00
 09876543210	31	15	62.00
 66554433221	31	18	60.00
-66554433221	4	16	345.00
-01482870936	4	1	100.00
-01482870936	32	2	100.00
 \.
 
 
@@ -1438,8 +1421,6 @@ COPY negozi.orari (negozio, dow, iod, apertura, chiusura) FROM stdin;
 --
 
 COPY negozi.ordini_fornitori (id_ordine, fornitore, negozio, prodotto, quantita, data_ordine, data_consegna, stato_ordine) FROM stdin;
-1	66554433221	1	4	2	2026-01-21 00:00:00	2026-01-28	consegnato
-2	01482870936	2	4	1	2026-01-21 00:00:00	2026-01-28	annullato
 \.
 
 
@@ -1450,6 +1431,7 @@ COPY negozi.ordini_fornitori (id_ordine, fornitore, negozio, prodotto, quantita,
 COPY negozi.prodotti (id_prodotto, nome_prodotto, descrizione, immagine_url) FROM stdin;
 1	Commodore 64	Il computer più venduto della storia! CPU MOS 6510 a 1MHz, 64KB RAM, chip sonoro SID leggendario. Include alimentatore e cavi. Perfettamente funzionante, testato.	/images/products/c64.jpg
 2	Commodore Amiga 500	La rivoluzione multimediale! CPU Motorola 68000 a 7.14MHz, 512KB Chip RAM espandibile, grafica OCS con 4096 colori, audio stereo Paula. Sistema Workbench 1.3 su floppy. Condizioni eccellenti.	/images/products/amiga500.jpg
+3	ZX Spectrum 48K	Icona britannica degli anni 80. CPU Zilog Z80A a 3.5MHz, 48KB RAM, tastiera a membrana originale. Uscita RF per TV. Funzionante, con manuale originale.	/images/products/spectrum.jpg
 4	Apple II Europlus	Versione europea dell Apple II. CPU MOS 6502 a 1MHz, 48KB RAM, tastiera meccanica, drive 5.25" Disk II incluso. Perfetto per collezionisti.	/images/products/appleii.jpg
 5	Atari 800XL	Home computer di lusso. CPU 6502C a 1.79MHz, 64KB RAM, chip grafici GTIA e ANTIC, chip audio POKEY. BASIC integrato. Ottime condizioni.	/images/products/atari800xl.jpg
 6	MSX Sony HitBit HB-75P	Standard MSX giapponese. CPU Z80A a 3.58MHz, 32KB RAM, 32KB VROM, MSX-BASIC integrato. Compatibile con migliaia di giochi.	/images/products/msx.jpg
@@ -1458,28 +1440,26 @@ COPY negozi.prodotti (id_prodotto, nome_prodotto, descrizione, immagine_url) FRO
 9	Nintendo NES	La console che ha salvato il videogioco! 2 controller originali, Zapper light gun, Super Mario Bros/Duck Hunt. CPU Ricoh 2A03, grafica PPU. PAL italiano.	/images/products/nes.jpg
 10	Sega Master System	Rivale di Nintendo in Europa. CPU Z80A, grafica superiore al NES, Alex Kidd in Miracle World integrato. 2 controller e Phaser inclusi.	/images/products/mastersystem.jpg
 11	Atari 2600 Jr	La pioniera! Console che ha creato l industria. Include joystick e 5 cartucce classiche: Pac-Man, Space Invaders, Pitfall, River Raid, Barnstorming.	/images/products/atari2600.jpg
+12	Datasette C1530	Lettore cassette ufficiale Commodore per C64/VIC-20. Testine pulite, funzionamento garantito. Include cavi di collegamento.	/images/products/datasette.jpg
 13	Floppy Drive 1541-II	Drive 5.25" ufficiale Commodore, versione migliorata e più veloce. Perfettamente funzionante, testato con dischetti di verifica.	/images/products/drive1541.jpg
 14	Monitor 1084S	Monitor RGB 14" stereo Philips/Commodore. Ideale per Amiga e C64. Ingresso RGB analogico, composite e S-Video. Immagine nitida, colori vividi.	/images/products/monitor1084.jpg
 15	Joystick Competition Pro	Il migliore joystick vintage! Microswitches Zippy professionali, impugnatura ergonomica rossa. Compatibile C64/Amiga/Atari. Indistruttibile.	/images/products/competitionpro.jpg
+16	Floppy Disk 5.25" DD x10	Dischetti vergini doppia densità, confezione sigillata. Perfetti per C64/Amiga. Etichette incluse.	/images/products/floppydisk.jpg
 17	Cassette C30 x5	Cassette magnetiche nuove per datasette. Qualità premium, basso rumore. Perfette per salvataggi e giochi.	/images/products/cassette.jpg
+18	Epyx Fast Load C64	Cartuccia acceleratore caricamenti. Riduce i tempi di 5x! Include desktop utility e sprite editor. Essenziale per ogni C64.	/images/products/fastload.jpg
 19	Compute! Gazette 1985	Annata completa rilegata. 12 numeri con centinaia di listati BASIC per C64. Giochi, utility, tutorial. Condizioni ottime.	/images/products/gazette.jpg
+20	The Last Ninja C64	Capolavoro assoluto di System 3. Grafica isometrica mozzafiato, colonna sonora epica di Ben Daglish. Cassetta originale con manuale. Raro!	/images/products/lastninja.jpg
 21	Elite C64/Spectrum	Simulatore spaziale 3D rivoluzionario. Trading, combattimenti, esplorazione galattica. Include mappa stellare e tastierino comandi. Versioni C64 e Spectrum.	/images/products/elite.jpg
+23	Maniac Mansion C64	Prima avventura SCUMM di LucasFilm Games. Horror comedy con 7 personaggi giocabili, finali multipli. Box originale con poster e manuale.	/images/products/maniac.jpg
 25	Turrican C64	Capolavoro di Manfred Trenz. Run n gun epico, grafica spettacolare, musica Chris Huelsbeck indimenticabile. Versione cassetta, mint condition.	/images/products/turrican.jpg
 26	International Karate C64	Picchiaduro perfetto di Archer Maclean. Grafica fluida, mosse spettacolari, IA avanzata. Include poster movimenti. Floppy originale System 3.	/images/products/karate.jpg
 27	Monkey Island Amiga	The Secret of Monkey Island! Avventura grafica LucasArts. Pirati, umorismo, enigmi brillanti. 11 floppy, manuale originale, Dial-a-Pirate.	/images/products/monkey.jpg
 28	Lemmings Amiga	Puzzle game geniale di DMA Design. Salva i lemmings! 120 livelli, grafica adorabile, musica orecchiabile. Box originale Psygnosis.	/images/products/lemmings.jpg
-3	ZX Spectrum 48K	Icona britannica degli anni 80. CPU Zilog Z80A a 3.5MHz, 48KB RAM, tastiera a membrana originale. Uscita RF per TV. Funzionante, con manuale originale.	/images/products/spectrum.jpg
-18	Epyx Fast Load C64	Cartuccia acceleratore caricamenti. Riduce i tempi di 5x! Include desktop utility e sprite editor. Essenziale per ogni C64.	/images/products/epyx.jpg
-12	Datasette C1530	Lettore cassette ufficiale Commodore per C64/VIC-20. Testine pulite, funzionamento garantito. Include cavi di collegamento.	/images/products/datasette_c1530.jpg
-16	Floppy Disk 5.25" DD x10	Dischetti vergini doppia densità, confezione sigillata. Perfetti per C64/Amiga. Etichette incluse.	/images/products/floppy.jpg
-20	The Last Ninja C64	Capolavoro assoluto di System 3. Grafica isometrica mozzafiato, colonna sonora epica di Ben Daglish. Cassetta originale con manuale. Raro!	/images/products/ninja.jpg
-22	Zak McKracken Amiga	Avventura grafica LucasArts. Giornalista contro alieni! Sistema SCUMM, umorismo brillante, enigmi geniali. Confezione big box originale con tutti i materiali.	/images/products/zak.png
-23	Maniac Mansion C64	Prima avventura SCUMM di LucasFilm Games. Horror comedy con 7 personaggi giocabili, finali multipli. Box originale con poster e manuale.	/images/products/maniac.jpg
+22	Zak McKracken C64	Avventura grafica LucasArts. Giornalista contro alieni! Sistema SCUMM, umorismo brillante, enigmi geniali. Confezione big box originale con tutti i materiali.	/images/products/zak.png
 24	Impossible Mission C64	Capolavoro platform/puzzle di Epstein. Sintetizzatore vocale 'Another visitor!', 8 ore per salvare il mondo. Cassetta originale.	/images/products/impossible.png
-29	Speedball 2 Amiga	Sport futuristico brutale dei Bitmap Brothers. Grafica metallica, gameplay perfetto. 'Ice cream! Ice cream!' Versione big box.	/images/products/speedball.jpg
-30	Shadow of the Beast Amiga	Showcase tecnico Amiga. 12 layer parallax, 132 colori su schermo, colonna sonora David Whittaker. Box lungo Psygnosis con poster.	/images/products/shadow.jpg
+30	Shadow of the Beast Amiga	Showcase tecnico Amiga. 12 layer parallax, 132 colori su schermo, colonna sonora David Whittaker. Box lungo Psygnosis con poster.	/images/products/beast.jpg
+29	Speedball 2 Amiga	Sport futuristico brutale dei Bitmap Brothers. Grafica metallica, gameplay perfetto. 'Ice cream! Ice cream!' Versione big box.	/images/products/speedball2.jpg
 31	Sensible Soccer Amiga	Il miglior calcio in 2D di sempre! Controllo perfetto, 1500+ squadre, edit mode. Versione Sensible Software con aggiornamenti.	/images/products/sensible.png
-32	Game Boy	Nintendo Game Boy. Primo video game portatile multi cartridge della Nintendo.	/images/products/gameboy.png
 \.
 
 
@@ -1496,21 +1476,21 @@ COPY negozi.storico_tessere (id_storico, codice_tessera, cliente, saldo_punti, n
 --
 
 COPY negozi.tessere (id_tessera, negozio_emittente, data_richiesta, saldo_punti) FROM stdin;
-2	4	2025-04-07	79
-3	4	2024-04-10	128
-4	2	2025-05-22	394
-5	3	2024-12-06	426
-6	2	2025-08-05	170
-7	2	2024-07-05	294
-8	5	2024-05-22	139
-9	2	2025-12-06	463
-10	4	2025-10-07	57
-11	2	2024-08-05	272
-12	1	2025-10-25	452
-13	2	2025-10-31	3
-14	3	2025-03-18	320
-15	4	2024-07-10	239
-1	5	2025-02-08	411
+1	2	2025-08-16	307
+2	1	2025-11-23	379
+3	4	2025-06-28	346
+4	4	2025-01-13	230
+5	5	2025-12-24	413
+6	4	2025-11-17	142
+7	4	2024-09-04	72
+8	1	2025-03-21	48
+9	3	2024-04-19	468
+10	4	2025-01-15	49
+11	4	2025-04-02	29
+12	3	2024-07-14	205
+13	2	2024-12-13	141
+14	1	2025-02-26	121
+15	2	2024-10-26	202
 \.
 
 
@@ -1539,7 +1519,7 @@ SELECT pg_catalog.setval('negozi.clienti_id_cliente_seq', 15, true);
 -- Name: fatture_id_fattura_seq; Type: SEQUENCE SET; Schema: negozi; Owner: postgres
 --
 
-SELECT pg_catalog.setval('negozi.fatture_id_fattura_seq', 1, true);
+SELECT pg_catalog.setval('negozi.fatture_id_fattura_seq', 1, false);
 
 
 --
@@ -1553,14 +1533,14 @@ SELECT pg_catalog.setval('negozi.negozi_id_negozio_seq', 5, true);
 -- Name: ordini_fornitori_id_ordine_seq; Type: SEQUENCE SET; Schema: negozi; Owner: postgres
 --
 
-SELECT pg_catalog.setval('negozi.ordini_fornitori_id_ordine_seq', 2, true);
+SELECT pg_catalog.setval('negozi.ordini_fornitori_id_ordine_seq', 1, false);
 
 
 --
 -- Name: prodotti_id_prodotto_seq; Type: SEQUENCE SET; Schema: negozi; Owner: postgres
 --
 
-SELECT pg_catalog.setval('negozi.prodotti_id_prodotto_seq', 32, true);
+SELECT pg_catalog.setval('negozi.prodotti_id_prodotto_seq', 31, true);
 
 
 --
@@ -1607,14 +1587,6 @@ ALTER TABLE ONLY auth.ruolo
 
 ALTER TABLE ONLY auth.utenti
     ADD CONSTRAINT unique_email UNIQUE (email);
-
-
---
--- Name: utente_ruolo utente_ruolo_pk; Type: CONSTRAINT; Schema: auth; Owner: postgres
---
-
-ALTER TABLE ONLY auth.utente_ruolo
-    ADD CONSTRAINT utente_ruolo_pk PRIMARY KEY (id_utente, id_ruolo);
 
 
 --
@@ -1765,19 +1737,11 @@ CREATE TRIGGER trg_archivia_tessere_negozio BEFORE UPDATE OF attivo ON negozi.ne
 
 
 --
--- Name: utente_ruolo fk_ruolo; Type: FK CONSTRAINT; Schema: auth; Owner: postgres
+-- Name: utenti fk_ruolo; Type: FK CONSTRAINT; Schema: auth; Owner: postgres
 --
 
-ALTER TABLE ONLY auth.utente_ruolo
-    ADD CONSTRAINT fk_ruolo FOREIGN KEY (id_ruolo) REFERENCES auth.ruolo(id_ruolo) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: utente_ruolo fk_utente; Type: FK CONSTRAINT; Schema: auth; Owner: postgres
---
-
-ALTER TABLE ONLY auth.utente_ruolo
-    ADD CONSTRAINT fk_utente FOREIGN KEY (id_utente) REFERENCES auth.utenti(id_utente) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY auth.utenti
+    ADD CONSTRAINT fk_ruolo FOREIGN KEY (ruolo) REFERENCES auth.ruolo(id_ruolo);
 
 
 --
